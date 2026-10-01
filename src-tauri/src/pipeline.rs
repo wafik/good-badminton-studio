@@ -151,7 +151,7 @@ pub async fn spawn_run(
                 video,
                 template,
                 status: status.into(),
-                started_at: String::new(),
+                started_at: chrono_lite_now(),
                 elapsed_sec: elapsed,
                 output_dir: out_dir.clone(),
                 rally_count,
@@ -174,7 +174,7 @@ fn state_hist_path(app: &AppHandle) -> PathBuf {
 }
 
 fn chrono_lite_now() -> String {
-    // ISO-ish tanpa dependency chrono: unix epoch seconds
+    // unix epoch detik (bukan ISO 8601 — konsumen UI format sendiri)
     format!(
         "{}",
         std::time::SystemTime::now()

@@ -13,9 +13,12 @@ async fn start_run(
     params: pipeline::RunParams,
 ) -> Result<(), String> {
     use tauri::Manager;
-    let cfg = config::load(&app.path().app_config_dir().unwrap().join("config.json"))
+    let path = app.path().app_config_dir().unwrap().join("config.json");
+    let cfg = config::load(&path)
         .map_err(|e| e.to_string())?
-        .ok_or("config belum di-set (get_defaults dulu)")?;
+        // first launch: config.json belum ada → fallback ke auto-detect sibling
+        .or_else(|| config::detect(&std::env::current_dir().unwrap_or_default()))
+        .ok_or("config tidak ada dan sibling Good-Badminton-Cpp tidak terdeteksi")?;
     pipeline::spawn_run(app, state, cfg, params).await
 }
 
