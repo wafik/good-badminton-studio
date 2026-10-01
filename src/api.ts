@@ -23,7 +23,7 @@ export interface RunParams {
   annotations: string | null;
   out_dir: string;
   audio: boolean;
-  language: "en" | "zh";
+  language: "en" | "zh" | "id";
   show_skeletons: boolean;
   show_player_trajectories: boolean;
   show_court_trajectory: boolean;

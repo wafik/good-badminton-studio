@@ -53,18 +53,23 @@ export function renderSetup(root: HTMLElement) {
             </label>
             <div class="field field-half">
               <span class="field-label">Bahasa</span>
-              <select id="v-lang"><option value="zh">zh</option><option value="en">en</option></select>
+              <select id="v-lang">
+                <option value="id">Indonesia</option>
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+              </select>
+              <span class="hint">Teks panel statistik pada video output</span>
             </div>
           </div>
           <fieldset class="params">
             <legend>Display overlay</legend>
             <div class="tog-grid">
-              <label class="tog"><input type="checkbox" id="p-skel" checked /><span>Skeleton</span></label>
-              <label class="tog"><input type="checkbox" id="p-trail" checked /><span>Player trail</span></label>
-              <label class="tog"><input type="checkbox" id="p-court" checked /><span>Court trail</span></label>
-              <label class="tog"><input type="checkbox" id="p-shuttle" checked /><span>Shuttle trail</span></label>
-              <label class="tog"><input type="checkbox" id="p-stats" checked /><span>Stats panel</span></label>
-              <label class="tog"><input type="checkbox" id="p-roi" checked /><span>Pose ROI</span></label>
+              <label class="tog"><input type="checkbox" id="p-skel" checked /><span class="tog-txt"><span class="tog-name">Skeleton</span><span class="tog-desc">Rangka pose pemain di tiap frame</span></span></label>
+              <label class="tog"><input type="checkbox" id="p-trail" checked /><span class="tog-txt"><span class="tog-name">Player trail</span><span class="tog-desc">Jejak titik posisi pemain selama bermain</span></span></label>
+              <label class="tog"><input type="checkbox" id="p-court" checked /><span class="tog-txt"><span class="tog-name">Court trail</span><span class="tog-desc">Mini-lapangan + lintasan pemain di dalamnya</span></span></label>
+              <label class="tog"><input type="checkbox" id="p-shuttle" checked /><span class="tog-txt"><span class="tog-name">Shuttle trail</span><span class="tog-desc">Jejak lintasan kok sepanjang rally</span></span></label>
+              <label class="tog"><input type="checkbox" id="p-stats" checked /><span class="tog-txt"><span class="tog-name">Stats panel</span><span class="tog-desc">Statistik kecepatan &amp; jarak tiap pemain</span></span></label>
+              <label class="tog"><input type="checkbox" id="p-roi" checked /><span class="tog-txt"><span class="tog-name">Pose ROI</span><span class="tog-desc">Bingkai area tempat deteksi pose berjalan</span></span></label>
             </div>
           </fieldset>
           <div class="actions">
@@ -164,7 +169,7 @@ export function renderSetup(root: HTMLElement) {
       annotations: (root.querySelector("#v-ann") as HTMLInputElement).value || null,
       out_dir: (root.querySelector("#v-out") as HTMLInputElement).value,
       audio: (root.querySelector("#v-audio") as HTMLInputElement).checked,
-      language: (root.querySelector("#v-lang") as HTMLSelectElement).value as "en" | "zh",
+      language: (root.querySelector("#v-lang") as HTMLSelectElement).value as "en" | "zh" | "id",
       show_skeletons: chk("#p-skel"),
       show_player_trajectories: chk("#p-trail"),
       show_court_trajectory: chk("#p-court"),
