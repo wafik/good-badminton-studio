@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "studio-scaffold",
+      "name": "good-badminton-studio",
       "dependencies": {
         "@tauri-apps/api": "^2.12.1",
         "@tauri-apps/plugin-dialog": "^2.8.1",
