@@ -16,6 +16,7 @@
 - Anotasi lapangan harus byte-format persis yang dibaca pipeline: 3 baris `corners=[(x, y), ...]`, `roi_corners=[(x, y), (x, y)]`, `mid_height=<int>` (reader: `src/system.cpp:235-273` — line 2 di-skip, roi selalu recompute).
 - Model/paths default: sibling `Good-Badminton-Cpp/build/Release/gb_cpp.exe`, data dir `Good-Badminton/` (weights `yolo11n-pose-dyn.onnx` + `yolo11s-ball.onnx`), semuanya di-overridable via config. Deteksi wajib menoleransi lintas-OS: `gb_cpp.exe` (Windows) maupun `gb_cpp` (macOS/Linux), path `build/Release/` maupun `build/`.
 - Rally count di riwayat = port aturan `compare_parity.py:rally_count` (START_HITS=3, WINDOW=2.0, QUIET=4.0) di atas jsonl.
+- Toggle display pipeline (`--skeletons`, `--player-trajectories`, `--court-trajectory`, `--shuttlecock-trajectory`, `--player-stats`, `--pose-roi`) wajib default **true** (identik Python main.py — parity tidak boleh berubah). UI mengekspos semuanya; `config.json` menyimpan preferensi user (`defaults`), di-prefill ke form.
 - Git: init di folder Studio, commit tiap task.
 
 ## File Structure
@@ -523,6 +524,37 @@ pub struct Config {
     pub data_dir: String,
     pub ball_model: String,
     pub pose_model: String,
+    /// Parameter run default untuk prefill UI (lama: field boleh absen → Default).
+    #[serde(default)]
+    pub defaults: RunDefaults,
+}
+
+/// Default identik main.py: audio on, enam toggle display true, language zh.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RunDefaults {
+    pub audio: bool,
+    pub language: String,
+    pub show_skeletons: bool,
+    pub show_player_trajectories: bool,
+    pub show_court_trajectory: bool,
+    pub show_shuttlecock_trajectory: bool,
+    pub show_player_stats: bool,
+    pub show_pose_roi: bool,
+}
+
+impl Default for RunDefaults {
+    fn default() -> Self {
+        RunDefaults {
+            audio: true,
+            language: "zh".into(),
+            show_skeletons: true,
+            show_player_trajectories: true,
+            show_court_trajectory: true,
+            show_shuttlecock_trajectory: true,
+            show_player_stats: true,
+            show_pose_roi: true,
+        }
+    }
 }
 
 /// Cari sibling: binary pipeline (gb_cpp.exe di Windows, gb_cpp di
@@ -547,6 +579,7 @@ pub fn detect(base: &Path) -> Option<Config> {
             data_dir: data.to_string_lossy().into_owned(),
             ball_model: data.join("weights/yolo11s-ball.onnx").to_string_lossy().into_owned(),
             pose_model: data.join("weights/yolo11n-pose-dyn.onnx").to_string_lossy().into_owned(),
+            defaults: RunDefaults::default(),
         });
     }
     None
@@ -597,6 +630,36 @@ mod tests {
     fn load_missing_returns_none() {
         let p = std::env::temp_dir().join(format!("gb_cfg_{}.json", std::process::id()));
         assert!(load(&p).unwrap().is_none());
+    }
+
+    #[test]
+    fn defaults_roundtrip() {
+        let p = std::env::temp_dir().join(format!("gb_cfg_rt_{}.json", std::process::id()));
+        let cfg = Config {
+            gb_cpp_path: "e".into(),
+            data_dir: "d".into(),
+            ball_model: "b".into(),
+            pose_model: "p".into(),
+            defaults: RunDefaults::default(),
+        };
+        save(&p, &cfg).unwrap();
+        let back = load(&p).unwrap().unwrap();
+        assert!(back.defaults.show_skeletons && back.defaults.audio);
+        assert_eq!(back.defaults.language, "zh");
+        std::fs::remove_file(&p).ok();
+    }
+
+    #[test]
+    fn legacy_config_without_defaults_field_loads() {
+        let p = std::env::temp_dir().join(format!("gb_cfg_legacy_{}.json", std::process::id()));
+        std::fs::write(
+            &p,
+            "{\"gb_cpp_path\":\"e\",\"data_dir\":\"d\",\"ball_model\":\"b\",\"pose_model\":\"p\"}",
+        )
+        .unwrap();
+        let back = load(&p).unwrap().unwrap();
+        assert!(back.defaults.show_player_stats);
+        std::fs::remove_file(&p).ok();
     }
 }
 ```
@@ -659,6 +722,7 @@ pub struct RunState {
     pub child: Mutex<Option<tokio::process::Child>>,
 }
 
+#[derive(serde::Deserialize, Clone, Debug)]
 pub struct RunParams {
     pub video: String,
     pub template: String,
@@ -666,9 +730,16 @@ pub struct RunParams {
     pub out_dir: String,
     pub audio: bool,
     pub language: String,
+    pub show_skeletons: bool,
+    pub show_player_trajectories: bool,
+    pub show_court_trajectory: bool,
+    pub show_shuttlecock_trajectory: bool,
+    pub show_player_stats: bool,
+    pub show_pose_roi: bool,
 }
 
 pub fn args_for(cfg: &Config, p: &RunParams) -> Vec<String> {
+    let b = |v: bool| if v { "true" } else { "false" }.to_string();
     let mut a = vec![
         p.video.clone(),
         "--template".into(),
@@ -676,7 +747,7 @@ pub fn args_for(cfg: &Config, p: &RunParams) -> Vec<String> {
         "--out".into(),
         p.out_dir.clone(),
         "--audio".into(),
-        if p.audio { "true" } else { "false" }.into(),
+        b(p.audio),
         "--language".into(),
         p.language.clone(),
         "--ball-model".into(),
@@ -684,6 +755,19 @@ pub fn args_for(cfg: &Config, p: &RunParams) -> Vec<String> {
         "--yolo-pose-model".into(),
         cfg.pose_model.clone(),
         "--progress-json".into(),
+        // display toggles — selalu eksplisit; default C++ = true = Python parity
+        "--skeletons".into(),
+        b(p.show_skeletons),
+        "--player-trajectories".into(),
+        b(p.show_player_trajectories),
+        "--court-trajectory".into(),
+        b(p.show_court_trajectory),
+        "--shuttlecock-trajectory".into(),
+        b(p.show_shuttlecock_trajectory),
+        "--player-stats".into(),
+        b(p.show_player_stats),
+        "--pose-roi".into(),
+        b(p.show_pose_roi),
     ];
     if let Some(ann) = &p.annotations {
         a.push("--annotations".into());
@@ -702,6 +786,7 @@ mod tests {
             data_dir: "d".into(),
             ball_model: "b.onnx".into(),
             pose_model: "p.onnx".into(),
+            defaults: crate::config::RunDefaults::default(),
         }
     }
 
@@ -714,11 +799,20 @@ mod tests {
             out_dir: "o".into(),
             audio: false,
             language: "en".into(),
+            show_skeletons: false,
+            show_player_trajectories: true,
+            show_court_trajectory: true,
+            show_shuttlecock_trajectory: true,
+            show_player_stats: true,
+            show_pose_roi: false,
         };
         let a = args_for(&cfg(), &p);
         assert!(a.contains(&"--progress-json".to_string()));
         assert!(a.contains(&"--annotations".to_string()));
         assert!(a.windows(2).any(|w| w[0] == "--audio" && w[1] == "false"));
+        assert!(a.windows(2).any(|w| w[0] == "--skeletons" && w[1] == "false"));
+        assert!(a.windows(2).any(|w| w[0] == "--pose-roi" && w[1] == "false"));
+        assert!(a.windows(2).any(|w| w[0] == "--court-trajectory" && w[1] == "true"));
         assert!(a.contains(&"p.onnx".to_string()));
     }
 
@@ -731,6 +825,12 @@ mod tests {
             out_dir: "o".into(),
             audio: true,
             language: "zh".into(),
+            show_skeletons: true,
+            show_player_trajectories: true,
+            show_court_trajectory: true,
+            show_shuttlecock_trajectory: true,
+            show_player_stats: true,
+            show_pose_roi: true,
         };
         assert!(!args_for(&cfg(), &p).contains(&"--annotations".to_string()));
     }
@@ -944,11 +1044,22 @@ git add -A && git commit -m "feat: pipeline spawn/cancel with progress events + 
 ```ts
 import { invoke } from "@tauri-apps/api/core";
 
+export interface RunDefaults {
+  audio: boolean;
+  language: string;
+  show_skeletons: boolean;
+  show_player_trajectories: boolean;
+  show_court_trajectory: boolean;
+  show_shuttlecock_trajectory: boolean;
+  show_player_stats: boolean;
+  show_pose_roi: boolean;
+}
 export interface Config {
   gb_cpp_path: string;
   data_dir: string;
   ball_model: string;
   pose_model: string;
+  defaults: RunDefaults;
 }
 export interface RunParams {
   video: string;
@@ -957,6 +1068,12 @@ export interface RunParams {
   out_dir: string;
   audio: boolean;
   language: "en" | "zh";
+  show_skeletons: boolean;
+  show_player_trajectories: boolean;
+  show_court_trajectory: boolean;
+  show_shuttlecock_trajectory: boolean;
+  show_player_stats: boolean;
+  show_pose_roi: boolean;
 }
 
 export const getDefaults = () =>
@@ -997,7 +1114,7 @@ export const saveAnnotations = (path: string, corners: number[][], mid: number) 
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
-import { startRun, cancelRun, type RunParams } from "./api";
+import { startRun, cancelRun, getDefaults, saveConfig, type RunParams } from "./api";
 
 export function renderSetup(root: HTMLElement) {
   root.innerHTML = `
@@ -1008,6 +1125,15 @@ export function renderSetup(root: HTMLElement) {
       <label>Annotations <input id="v-ann" readonly /><button id="p-ann">…</button> (opsional)</label>
       <label>Audio <input type="checkbox" id="v-audio" checked /></label>
       <label>Language <select id="v-lang"><option value="zh">zh</option><option value="en">en</option></select></label>
+      <fieldset class="params">
+        <legend>Display</legend>
+        <label><input type="checkbox" id="p-skel" checked> Skeleton</label>
+        <label><input type="checkbox" id="p-trail" checked> Player trail</label>
+        <label><input type="checkbox" id="p-court" checked> Court trail</label>
+        <label><input type="checkbox" id="p-shuttle" checked> Shuttle trail</label>
+        <label><input type="checkbox" id="p-stats" checked> Stats panel</label>
+        <label><input type="checkbox" id="p-roi" checked> Pose ROI</label>
+      </fieldset>
       <button id="b-run">Run</button><button id="b-cancel" disabled>Cancel</button>
       <button id="b-open" hidden>Buka folder output</button>
     </div>
@@ -1030,6 +1156,23 @@ export function renderSetup(root: HTMLElement) {
   root.querySelector("#p-ann")!.addEventListener("click", async () => {
     const f = await pick({ filters: [{ name: "Anotasi", extensions: ["txt"] }] });
     if (f) (root.querySelector("#v-ann") as HTMLInputElement).value = f;
+  });
+
+  // Prefill parameter dari config.json (preferensi user terakhir)
+  void getDefaults().then(([cfg]) => {
+    const d = cfg?.defaults;
+    if (!d) return;
+    (root.querySelector("#v-audio") as HTMLInputElement).checked = d.audio;
+    (root.querySelector("#v-lang") as HTMLSelectElement).value = d.language;
+    const pairs: [string, boolean][] = [
+      ["#p-skel", d.show_skeletons],
+      ["#p-trail", d.show_player_trajectories],
+      ["#p-court", d.show_court_trajectory],
+      ["#p-shuttle", d.show_shuttlecock_trajectory],
+      ["#p-stats", d.show_player_stats],
+      ["#p-roi", d.show_pose_roi],
+    ];
+    for (const [id, v] of pairs) (root.querySelector(id) as HTMLInputElement).checked = v;
   });
 
   let t0 = 0;
@@ -1058,6 +1201,7 @@ export function renderSetup(root: HTMLElement) {
 
   root.querySelector("#b-run")!.addEventListener("click", async () => {
     t0 = 0;
+    const chk = (id: string) => (root.querySelector(id) as HTMLInputElement).checked;
     const params: RunParams = {
       video: (root.querySelector("#v-video") as HTMLInputElement).value,
       template: (root.querySelector("#v-template") as HTMLInputElement).value,
@@ -1065,12 +1209,33 @@ export function renderSetup(root: HTMLElement) {
       out_dir: (root.querySelector("#v-out") as HTMLInputElement).value,
       audio: (root.querySelector("#v-audio") as HTMLInputElement).checked,
       language: (root.querySelector("#v-lang") as HTMLSelectElement).value as "en" | "zh",
+      show_skeletons: chk("#p-skel"),
+      show_player_trajectories: chk("#p-trail"),
+      show_court_trajectory: chk("#p-court"),
+      show_shuttlecock_trajectory: chk("#p-shuttle"),
+      show_player_stats: chk("#p-stats"),
+      show_pose_roi: chk("#p-roi"),
     };
     if (!params.video || !params.template || !params.out_dir) return alert("lengkapi video/template/output");
     (root.querySelector("#b-run") as HTMLButtonElement).disabled = true;
     (root.querySelector("#b-cancel") as HTMLButtonElement).disabled = false;
     (root.querySelector("#log") as HTMLElement).textContent = "";
     try {
+      // persist preferensi parameter (gagal simpan tidak menghalangi run)
+      const [cfg] = await getDefaults();
+      if (cfg) {
+        cfg.defaults = {
+          audio: params.audio,
+          language: params.language,
+          show_skeletons: params.show_skeletons,
+          show_player_trajectories: params.show_player_trajectories,
+          show_court_trajectory: params.show_court_trajectory,
+          show_shuttlecock_trajectory: params.show_shuttlecock_trajectory,
+          show_player_stats: params.show_player_stats,
+          show_pose_roi: params.show_pose_roi,
+        };
+        await saveConfig(cfg).catch(() => {});
+      }
       await startRun(params);
     } catch (e) {
       alert(String(e));
@@ -1346,6 +1511,107 @@ Expected: exit 0, artefak `.exe` installer di `src-tauri/target/release/bundle/n
 
 ```bash
 git add -A && git commit -m "chore: e2e verified, nsis installer builds"
+```
+
+---
+
+### Task 10: Flag toggle display pipeline (repo Cpp)
+
+**Files:**
+- Modify: `Good-Badminton-Cpp/src/system.h:34-52` (SystemOptions + ganti komentar ponytail)
+- Modify: `Good-Badminton-Cpp/src/main.cpp` (6 arg + help)
+- Modify: `Good-Badminton-Cpp/src/system.cpp` (ctor init-list + body)
+
+**Interfaces:**
+- Produces: 6 flag CLI baru — `--skeletons|--player-trajectories|--court-trajectory|--shuttlecock-trajectory|--player-stats|--pose-roi`, semua `true|false`, **default true** (identik Python main.py; parity default tak boleh berubah). Dipakai Task 5 `args_for`.
+
+- [ ] **Step 1: SystemOptions** — ganti blok komentar ponytail (`system.h:47-51`) menjadi:
+
+```cpp
+    bool show_skeletons = true;              // main.py --skeletons default true
+    bool show_player_trajectories = true;    // main.py --player-trajectories default true
+    bool show_court_trajectory = true;       // main.py --court-trajectory default true
+    bool show_shuttlecock_trajectory = true; // main.py --shuttlecock-trajectory default true
+    bool show_player_stats = true;           // main.py --player-stats default true
+    bool show_pose_roi = true;               // main.py --pose-roi default true
+
+    // ponytail: --save-images / --visualize-positions tetap pin ke default
+    // Python (false, tanpa flag CLI); heatmaps tetap Python-side per spec.
+```
+
+- [ ] **Step 2: Parse + help** — di blok arg `main.cpp` (pola `--audio`), enam cabang + enam baris help:
+
+```cpp
+        } else if (a == "--skeletons") {
+            if (parse_bool(need("--skeletons"), opts.show_skeletons)) bad_value = true;
+        } else if (a == "--player-trajectories") {
+            if (parse_bool(need("--player-trajectories"), opts.show_player_trajectories)) bad_value = true;
+        } else if (a == "--court-trajectory") {
+            if (parse_bool(need("--court-trajectory"), opts.show_court_trajectory)) bad_value = true;
+        } else if (a == "--shuttlecock-trajectory") {
+            if (parse_bool(need("--shuttlecock-trajectory"), opts.show_shuttlecock_trajectory)) bad_value = true;
+        } else if (a == "--player-stats") {
+            if (parse_bool(need("--player-stats"), opts.show_player_stats)) bad_value = true;
+        } else if (a == "--pose-roi") {
+            if (parse_bool(need("--pose-roi"), opts.show_pose_roi)) bad_value = true;
+        }
+```
+```
+                 "  --skeletons true|false     draw pose skeleton (default: true)\n"
+                 "  --player-trajectories true|false  player dots+trails (default: true)\n"
+                 "  --court-trajectory true|false     court trajectory overlay (default: true)\n"
+                 "  --shuttlecock-trajectory true|false  shuttle trail (default: true)\n"
+                 "  --player-stats true|false  stats panel (default: true)\n"
+                 "  --pose-roi true|false       pose ROI overlay (default: true)\n"
+```
+(Petakan tiap flag ke field `opts.show_*` yang sesuai; `bad_value` adalah variabel bool yang sudah ada di loop arg.)
+
+- [ ] **Step 3: Wiring ctor** (`system.cpp`) — init-list (sekitar baris 128-131) tambah tiga entry:
+
+```cpp
+      show_pose_roi_(opts_.show_pose_roi),
+      show_court_trajectory_(opts_.show_court_trajectory),
+      show_player_stats_(opts_.show_player_stats),
+```
+Di body ctor, ganti `sp.show_trajectory = true;` (baris ~159) menjadi:
+```cpp
+    sp.show_trajectory = opts_.show_shuttlecock_trajectory;
+```
+dan setel public field renderer (setelah `pose_analyzer_` dibuat atau di mana pun ctor body sudah mengakses anggota — sebelum loop video):
+```cpp
+    skeleton_renderer_.show_skeletons = opts_.show_skeletons;
+    skeleton_renderer_.show_player_trajectories = opts_.show_player_trajectories;
+```
+(Field ada di `include/gb/viz.h:71-72`, public, default true.)
+
+- [ ] **Step 4: Build**
+
+```bash
+cd C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Cpp/build
+cmake --build . --config Release --target gb_cpp
+```
+Expected: exit 0.
+
+- [ ] **Step 5: Verifikasi — satu check runnable** (pre-seed annotations karena auto-detect gagal headless):
+
+```bash
+cd C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Cpp
+mkdir -p outputs/t10a outputs/t10b
+cp outputs/test4/court_annotations.txt outputs/t10a/ && cp outputs/test4/court_annotations.txt outputs/t10b/
+./build/Release/gb_cpp.exe tests/fixtures/short.mp4 --template "C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton/templates/test4.png" --out outputs/t10a > /dev/null 2>&1; echo A=$?
+./build/Release/gb_cpp.exe tests/fixtures/short.mp4 --template "C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton/templates/test4.png" --out outputs/t10b --skeletons false --pose-roi false --player-stats false --court-trajectory false --shuttlecock-trajectory false --player-trajectories false > /dev/null 2>&1; echo B=$?
+ffmpeg -y -loglevel error -i outputs/t10a/detect_short.mp4 -vf "select=eq(n\,75)" -vframes 1 /tmp/t10a.png
+ffmpeg -y -loglevel error -i outputs/t10b/detect_short.mp4 -vf "select=eq(n\,75)" -vframes 1 /tmp/t10b.png
+md5sum /tmp/t10a.png /tmp/t10b.png
+```
+Expected: `A=0 B=0`, dua md5 **berbeda** (overlay berbeda → pixel beda). Regresi: jalankan ulang A tanpa flag apa pun → exit 0 dan video identik-semantik (tidak ada perubahan perilaku default).
+
+- [ ] **Step 6: Commit**
+
+```bash
+cd C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Cpp
+git add src/system.h src/main.cpp src/system.cpp
+git commit -m "feat: expose python display toggles as CLI flags (defaults unchanged)"
 ```
 
 ---

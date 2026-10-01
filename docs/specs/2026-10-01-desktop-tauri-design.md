@@ -38,6 +38,11 @@ Folder: `C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Studio`
 4. **Riwayat**: `history.json` di app config dir — path video, waktu,
    status (ok/failed/cancelled), durasi proses, jumlah rally (dibaca
    dari metadata.json / jsonl output).
+5. **Parameter pipeline configurable**: toggle overlay (skeleton,
+   jejak pemain/lapangan/kok, stats panel, pose ROI), audio, bahasa —
+   prefilled dari `config.json` (default = Python defaults, parity
+   aman), disimpan otomatis saat Run. CLI `gb_cpp` mendapat 6 flag
+   display baru, default `true` (identik main.py).
 
 ## Pipeline integration
 
