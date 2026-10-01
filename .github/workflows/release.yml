@@ -3,6 +3,7 @@ name: release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -41,7 +42,7 @@ jobs:
       - name: Checkout engine source (Good-Badminton-Cpp)
         run: git clone --depth 1 https://github.com/wafik/good-badminton-cpp.git cpp-engine-src
 
-      - name: Engine deps (Windows: OpenCV prebuilt + ONNX Runtime)
+      - name: "Engine deps (Windows: OpenCV prebuilt + ONNX Runtime)"
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
@@ -54,7 +55,7 @@ jobs:
           curl.exe -fsSL -o $env:TEMP/ort-dml.nupkg https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/1.19.2
           7z e -y -o"$PWD/cpp-engine-src/third_party/onnxruntime-directml-1.19.2" $env:TEMP/ort-dml.nupkg "runtimes/win-x64/native/onnxruntime.dll" | Out-Null
 
-      - name: Engine deps (macOS: brew OpenCV + ONNX Runtime)
+      - name: "Engine deps (macOS: brew OpenCV + ONNX Runtime)"
         if: matrix.platform == 'macos-latest'
         run: |
           brew install opencv dylibbundler
@@ -62,7 +63,7 @@ jobs:
           mkdir -p cpp-engine-src/third_party
           tar -xzf /tmp/ort.tgz -C cpp-engine-src/third_party
 
-      - name: Engine deps (Linux: ONNX Runtime — OpenCV dari apt di atas)
+      - name: "Engine deps (Linux: ONNX Runtime — OpenCV dari apt di atas)"
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           curl -fsSL -o /tmp/ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.19.2/onnxruntime-linux-x64-1.19.2.tgz
