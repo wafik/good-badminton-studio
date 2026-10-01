@@ -1032,7 +1032,7 @@ git add -A && git commit -m "feat: pipeline spawn/cancel with progress events + 
 ### Task 6: Frontend — view Setup (run + progress + log)
 
 **Files:**
-- Modify: `index.html`, `package.json` (via `bun add` fontsource)
+- Modify: `index.html`, `package.json` (via `bun add` fontsource), `src-tauri/capabilities/default.json`
 - Create: `src/api.ts`, `src/setup.ts`, `src/styles.css`
 - Modify: `src/main.ts`
 
@@ -1199,7 +1199,7 @@ export function renderSetup(root: HTMLElement) {
       </div>
       <div class="stack">
         <section class="card progress-card">
-          <header class="card-head"><h2>Progress</h2></header>
+          <header class="card-head"><h2>Progress</h2><span id="run-status" class="chip" hidden></span></header>
           <progress id="prog" value="0" max="100"></progress>
           <span id="eta" class="mono">—</span>
         </section>
@@ -1268,7 +1268,11 @@ export function renderSetup(root: HTMLElement) {
       const b = root.querySelector("#b-open") as HTMLButtonElement;
       b.hidden = e.payload.status !== "ok";
       b.onclick = () => openPath(e.payload.output_dir);
-      (root.querySelector("#eta") as HTMLElement).textContent = `selesai: ${e.payload.status}`;
+      // status final di chip durable — #eta hanya untuk frame/ETA
+      const chip = root.querySelector("#run-status") as HTMLElement;
+      chip.textContent = e.payload.status;
+      chip.className = `chip s-${e.payload.status}`;
+      chip.hidden = false;
     });
   }
 
@@ -1293,6 +1297,7 @@ export function renderSetup(root: HTMLElement) {
     (root.querySelector("#b-run") as HTMLButtonElement).disabled = true;
     (root.querySelector("#b-cancel") as HTMLButtonElement).disabled = false;
     (root.querySelector("#log") as HTMLElement).textContent = "";
+    (root.querySelector("#run-status") as HTMLElement).hidden = true;
     try {
       // persist preferensi parameter (gagal simpan tidak menghalangi run)
       const [cfg] = await getDefaults();
@@ -1828,7 +1833,9 @@ bun run build
 ```
 Expected: exit 0 (tsc + vite).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Capability untuk "Buka folder output"** — di `src-tauri/capabilities/default.json` tambahkan `"opener:allow-open-path"` ke array `permissions` (Task 2 hanya memasang `opener:default` yang TIDAK mencakup `open_path` — tanpa ini ACL menolak `openPath()` saat tombol diklik).
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A && git commit -m "feat: setup view with run/cancel/progress/log"
