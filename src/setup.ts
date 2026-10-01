@@ -76,7 +76,7 @@ export function renderSetup(root: HTMLElement) {
       </div>
       <div class="stack">
         <section class="card progress-card">
-          <header class="card-head"><h2>Progress</h2></header>
+          <header class="card-head"><h2>Progress</h2><span id="run-status" class="chip" hidden></span></header>
           <progress id="prog" value="0" max="100"></progress>
           <span id="eta" class="mono">—</span>
         </section>
@@ -145,7 +145,11 @@ export function renderSetup(root: HTMLElement) {
       const b = root.querySelector("#b-open") as HTMLButtonElement;
       b.hidden = e.payload.status !== "ok";
       b.onclick = () => openPath(e.payload.output_dir);
-      (root.querySelector("#eta") as HTMLElement).textContent = `selesai: ${e.payload.status}`;
+      // status final di chip durable — #eta hanya untuk frame/ETA
+      const chip = root.querySelector("#run-status") as HTMLElement;
+      chip.textContent = e.payload.status;
+      chip.className = `chip s-${e.payload.status}`;
+      chip.hidden = false;
     });
   }
 
@@ -170,6 +174,7 @@ export function renderSetup(root: HTMLElement) {
     (root.querySelector("#b-run") as HTMLButtonElement).disabled = true;
     (root.querySelector("#b-cancel") as HTMLButtonElement).disabled = false;
     (root.querySelector("#log") as HTMLElement).textContent = "";
+    (root.querySelector("#run-status") as HTMLElement).hidden = true;
     try {
       // persist preferensi parameter (gagal simpan tidak menghalangi run)
       const [cfg] = await getDefaults();
