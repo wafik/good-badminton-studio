@@ -1,43 +1,27 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="/src/styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
-    <script type="module" src="/src/main.ts" defer></script>
-  </head>
-
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Good-Badminton Studio</title></head>
   <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
-
-      <div class="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/src/assets/vite.svg" class="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img
-            src="/src/assets/tauri.svg"
-            class="logo tauri"
-            alt="Tauri logo"
-          />
-        </a>
-        <a href="https://www.typescriptlang.org/docs" target="_blank">
-          <img
-            src="/src/assets/typescript.svg"
-            class="logo typescript"
-            alt="typescript logo"
-          />
-        </a>
+    <nav class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+          <rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/>
+          <path d="M3.5 12h17M8.5 4.5v15M15.5 4.5v15"/>
+        </svg>
+        <span class="brand-name">GOOD-BADMINTON <em>STUDIO</em></span>
       </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
-
-      <form class="row" id="greet-form">
-        <input id="greet-input" placeholder="Enter a name..." />
-        <button type="submit">Greet</button>
-      </form>
-      <p id="greet-msg"></p>
+      <div class="tabs">
+        <button data-view="setup" class="tab active">Run</button>
+        <button data-view="corners" class="tab">Court</button>
+        <button data-view="history" class="tab">History</button>
+      </div>
+    </nav>
+    <main>
+      <section id="view-setup" class="view"></section>
+      <section id="view-corners" class="view" hidden></section>
+      <section id="view-history" class="view" hidden></section>
     </main>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
