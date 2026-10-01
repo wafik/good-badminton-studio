@@ -6,12 +6,12 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import { renderSetup } from "./setup";
 import { renderCorners } from "./corners";
-// renderHistory menyusul di Task 8 (import bertahap)
+import { renderHistory } from "./history";
 
 const views: Record<string, (el: HTMLElement) => void> = {
   setup: renderSetup,
   corners: renderCorners,
-  // history ditambahkan di task berikutnya
+  history: (el) => { void renderHistory(el); },
 };
 function show(name: string) {
   document.querySelectorAll("main section").forEach((s) => ((s as HTMLElement).hidden = s.id !== `view-${name}`));

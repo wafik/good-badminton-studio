@@ -53,6 +53,13 @@ fn save_annotations(path: String, corners: [[i32; 2]; 4], mid_height: i32) -> Re
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn list_history(app: tauri::AppHandle) -> Vec<history::Entry> {
+    use tauri::Manager;
+    let dir = app.path().app_config_dir().unwrap_or_default();
+    history::load(&dir.join("history.json")).unwrap_or_default()
+}
+
 fn which_ffmpeg() -> bool {
     std::process::Command::new("ffmpeg")
         .arg("-version")
@@ -80,7 +87,8 @@ pub fn run() {
             start_run,
             cancel_run,
             save_config,
-            save_annotations
+            save_annotations,
+            list_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
