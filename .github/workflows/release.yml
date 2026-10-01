@@ -47,7 +47,8 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: Good-Badminton Studio ${{ github.ref_name }}
           releaseBody: >
-            Build pertama v1 — installer Windows (NSIS), macOS (universal),
-            dan Linux (deb/AppImage). Butuh binary Good-Badminton-Cpp terpasang
-            (deteksi folder sibling atau set config.json).
+            Desktop GUI for the Good-Badminton analysis pipeline.
+            Installers for Windows (NSIS), macOS (universal), and Linux
+            (deb/AppImage). Requires the Good-Badminton-Cpp binary
+            (auto-detected from a sibling folder or set in config.json).
           args: ${{ matrix.args }}

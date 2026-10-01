@@ -1,37 +1,37 @@
 # Good-Badminton Studio
 
-Desktop GUI untuk pipeline analisis video bulu tangkis **Good-Badminton** — build dengan C++ (paritas penuh terhadap versi Python). Dibangun dengan **Tauri 2** (Rust shell) + **vanilla TypeScript** (tanpa framework), meng-gb_cpp.exe sebagai subprocess.
+Desktop GUI for the **Good-Badminton** badminton video analysis pipeline — the C++ build with full parity against the original Python version. Built with **Tauri 2** (Rust shell) + **vanilla TypeScript** (no framework); it drives `gb_cpp.exe` as a subprocess.
 
 ![badge](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue) ![badge](https://img.shields.io/badge/Tauri-2-teal) ![badge](https://img.shields.io/badge/bun-1.4-orange)
 
-## Fitur
+## Features
 
-- **Run** — pilih video & template, parameter lengkap (audio, bahasa, 6 toggle display: skeletons, trajectories, player stats, pose ROI), progress JSON live, log console, cancel di tengah jalan.
-- **Court** — picker 4 sudut lapangan di atas template (canvas), simpan `annotations.txt` siap pakai C++.
-- **History** — daftar run sebelumnya + preview video hasil (`detect_<nama>.mp4`).
-- **Professional dark UI** — tema "broadcast desk", IBM Plex Sans/Mono, 100% offline (font dibundel).
+- **Run** — pick a video and go: full parameter set (audio, language, 6 display toggles: skeletons, trajectories, player stats, pose ROI), live JSON progress, log console, cancel mid-run.
+- **Court** — 4-corner court picker on a canvas, exports `annotations.txt` ready for the C++ CLI.
+- **History** — list of past runs with preview of the result video (`detect_<name>.mp4`).
+- **Professional dark UI** — "broadcast desk" theme, IBM Plex Sans/Mono, 100% offline (fonts bundled).
 
-## Cara Penggunaan
+## Getting Started
 
-1. **Tab Run — tentukan input**
-   - **Video**: Browse ke video pertandingan (mp4/mov/…).
-   - **Template lapangan** *(opsional)*: kosongkan saja — pipeline otomatis memilih frame dari video yang lolos deteksi sudut (disimpan sebagai `auto_template.png` di folder output). Browse hanya bila ingin memakai PNG template sendiri.
-   - **Folder output**: tujuan hasil analisis (default `outputs/<nama-video>`).
-   - **Parameters**: audio on/off, bahasa (`zh`/`en`), dan 6 toggle display (skeletons, trajectories, player stats, pose ROI). Default semua `true` = sama dengan CLI Python.
-   - Klik **Run analysis** → progress bar + ETA + log live berjalan. **Cancel** menghentikan di tengah jalan. Selesai → tombol **Buka folder output** muncul.
-2. **Tab Court — (opsional) anotasi sudut lapangan**
-   - **Buka template…** pilih PNG lapangan, lalu klik **4 titik sudut** berurutan (chip `Titik: 0/4` → `4/4`).
-   - Sesuaikan `mid_height` bila perlu (default 625), klik **Simpan annotations** → file `annotations.txt` siap dipakai tab Run (`--annotations`).
-3. **Tab History — hasil & preview**
-   - Setiap run tercatat: status (`ok`/`failed`/`cancelled`), waktu, durasi, jumlah rally.
-   - Klik satu baris → **preview video hasil** (`detect_<nama-video>.mp4`) + detail langsung di panel.
-4. **Output** — di folder output: video hasil, `detections.jsonl` (per-frame), dan `court_annotations.txt`.
+1. **Run tab — set your inputs**
+   - **Video**: browse to your match video (mp4/mov/…).
+   - **Court template** *(optional)*: leave it empty — the pipeline automatically picks a frame from your video that passes court-corner detection (saved as `auto_template.png` in the output folder). Browse only if you want to supply your own PNG template.
+   - **Output folder**: where results are written (defaults to `outputs/<video-name>`).
+   - **Parameters**: audio on/off, language (`zh`/`en`), and the 6 display toggles. All default to `true`, matching the Python CLI.
+   - Click **Run analysis** → progress bar + ETA + live log. **Cancel** stops mid-run. When finished, a **Open output folder** button appears.
+2. **Court tab — (optional) corner annotations**
+   - **Browse template…** to pick a court PNG, then click the **4 corner points** in order (chip `Points: 0/4` → `4/4`).
+   - Adjust `mid_height` if needed (default 625), then **Save annotations** → the resulting `annotations.txt` is ready for the Run tab (`--annotations`).
+3. **History tab — results & preview**
+   - Every run is recorded: status (`ok`/`failed`/`cancelled`), time, duration, rally count.
+   - Click a row → **preview the result video** (`detect_<video-name>.mp4`) plus run details in the side panel.
+4. **Output** — the output folder contains the result video, `detections.jsonl` (per-frame), and `court_annotations.txt`.
 
-## Prasyarat
+## Requirements
 
-- Binary **Good-Badminton-Cpp** (`gb_cpp`) — deteksi otomatis dari folder sibling `Good-Badminton-Cpp`, atau arahkan manual lewat `config.json` (path tampil di pesan error first-run).
-- [ffmpeg](https://ffmpeg.org/) di `PATH` (opsional, untuk simpan audio).
-- [Bun](https://bun.sh) 1.4+ (hanya untuk development/build).
+- The **Good-Badminton-Cpp** binary (`gb_cpp`) — auto-detected from the sibling `Good-Badminton-Cpp` folder, or point to it manually via `config.json` (the path is shown in the first-run error message). **The Studio app is only the GUI; the pipeline binary and the ONNX models (`yolo11s-ball.onnx`, `yolo11n-pose-dyn.onnx` under `<data_dir>/weights/`) must be installed separately.**
+- [ffmpeg](https://ffmpeg.org/) on `PATH` (optional, for saving audio).
+- [Bun](https://bun.sh) 1.4+ (development/build only).
 
 ## Development
 
@@ -40,17 +40,17 @@ bun install
 bun run tauri dev
 ```
 
-## Build installer
+## Build Installer
 
 ```bash
 bun run tauri build        # Windows: NSIS; macOS: .app/.dmg; Linux: .deb/.AppImage
 ```
 
-CI menjalankan build yang sama di tag `v*` dan melampirkan installer ke GitHub Release (lihat `.github/workflows/release.yml`).
+CI runs the same build on `v*` tags and attaches installers to the GitHub Release (see `.github/workflows/release.yml`).
 
-## Konfigurasi
+## Configuration
 
-`config.json` di app config dir (Windows: `%APPDATA%\com.ulin.good-badminton-studio\`):
+`config.json` in the app config dir (Windows: `%APPDATA%\com.ulin.good-badminton-studio\`):
 
 ```json
 {
@@ -62,17 +62,17 @@ CI menjalankan build yang sama di tag `v*` dan melampirkan installer ke GitHub R
 }
 ```
 
-Enam toggle display **default `true`** = paritas dengan CLI Python. `progress-json` selalu dikirim dari Studio (wajib untuk progress bar) — flag itu opt-in, tidak mengubah perilaku default CLI.
+The six display toggles default to `true` for parity with the Python CLI. `progress-json` is always sent by the Studio (required for the progress bar) — it is opt-in and does not change default CLI behavior.
 
-Smoke test manual: lihat [`docs/manual-smoke.md`](docs/manual-smoke.md).
+Manual smoke test: see [`docs/manual-smoke.md`](docs/manual-smoke.md).
 
 ## Credits
 
-- **Upstream / referensi utama:** [yo-WASSUP/Good-Badminton](https://github.com/yo-WASSUP/Good-Badminton) — proyek asli Python "AI 羽毛球鹰眼系统" (analisis video bulu tangkis berbasis computer vision), beserta seri setenya [Good-Tennis](https://github.com/yo-WASSUP/Good-Tennis) dan [Good-Pickleball](https://github.com/yo-WASSUP/Good-Pickleball). Terima kasih atas ide, arsitektur, dan modelnya.
-- **Pipeline Python lokal `Good-Badminton`** — implementasi acuan (reference) yang di-rewrite ke C++ dengan paritas CLI 100% (coverage/court/shuttle/rally), dan menjadi dasar kontrak UI ini.
-- **Good-Badminton-Cpp** — mesin pemrosesnya (OpenCV 4 + ONNX Runtime, YOLO pose & shuttlecock).
-- Model: `yolo11n-pose-dyn.onnx`, `yolo11s-ball.onnx` (dari proyek upstream).
+- **Upstream / primary reference:** [yo-WASSUP/Good-Badminton](https://github.com/yo-WASSUP/Good-Badminton) — the original Python "AI 羽毛球鹰眼系统" project (computer-vision badminton video analysis), along with its sibling series [Good-Tennis](https://github.com/yo-WASSUP/Good-Tennis) and [Good-Pickleball](https://github.com/yo-WASSUP/Good-Pickleball). Thanks for the ideas, architecture, and models.
+- **Local Python pipeline `Good-Badminton`** — the reference implementation rewritten to C++ with 100% CLI parity (coverage/court/shuttle/rally), and the basis for this UI contract.
+- **Good-Badminton-Cpp** — the processing engine (OpenCV 4 + ONNX Runtime, YOLO pose & shuttlecock).
+- Models: `yolo11n-pose-dyn.onnx`, `yolo11s-ball.onnx` (from the upstream project).
 
-## Lisensi
+## License
 
-Ikuti lisensi proyek upstream ([yo-WASSUP/Good-Badminton](https://github.com/yo-WASSUP/Good-Badminton)).
+Licensed under the same license as the upstream project ([yo-WASSUP/Good-Badminton](https://github.com/yo-WASSUP/Good-Badminton)) — see [LICENSE](LICENSE).
