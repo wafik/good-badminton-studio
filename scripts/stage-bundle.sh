@@ -70,4 +70,5 @@ case "$(uname -s)" in
     ;;
 esac
 
-echo "staged:" && ls -la "$OUT/engine" | head -20 && ls -la "$OUT/models"
+# head menutup pipe lebih dulu → ls EPIPE → pipefail gagalkan step; anggap kosmetik
+echo "staged:" && { ls -la "$OUT/engine" | head -20 || true; } && ls -la "$OUT/models"

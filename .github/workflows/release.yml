@@ -58,7 +58,10 @@ jobs:
       - name: "Engine deps (macOS: brew OpenCV + ONNX Runtime)"
         if: matrix.platform == 'macos-latest'
         run: |
-          brew install opencv dylibbundler
+          # OpenCV 5 (formula `opencv`) moved imgproc APIs (contourArea,
+          # getPerspectiveTransform…) — pin to 4.x = parity baseline.
+          brew uninstall --force opencv 2>/dev/null || true
+          brew install opencv@4 dylibbundler
           curl -fsSL -o /tmp/ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.19.2/onnxruntime-osx-arm64-1.19.2.tgz
           mkdir -p cpp-engine-src/third_party
           tar -xzf /tmp/ort.tgz -C cpp-engine-src/third_party
@@ -75,7 +78,7 @@ jobs:
         run: |
           extra=()
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
-            extra+=(-DOpenCV_DIR="$(brew --prefix opencv)/lib/cmake/opencv4")
+            extra+=(-DOpenCV_DIR="$(brew --prefix opencv@4)/lib/cmake/opencv4")
           fi
           if [ "${{ matrix.platform }}" = "windows-latest" ]; then
             # VS2026 runner (MSVC 19.51) not in OpenCV 4.10's runtime ladder —
