@@ -927,7 +927,7 @@ pub async fn spawn_run(
                 video,
                 template,
                 status: status.into(),
-                started_at: String::new(),
+                started_at: chrono_lite_now(),
                 elapsed_sec: elapsed,
                 output_dir: out_dir.clone(),
                 rally_count,
@@ -950,7 +950,7 @@ fn state_hist_path(app: &AppHandle) -> PathBuf {
 }
 
 fn chrono_lite_now() -> String {
-    // ISO-ish tanpa dependency chrono: unix epoch seconds
+    // unix epoch detik (bukan ISO 8601 — konsumen UI format sendiri)
     format!("{}", std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs())
 }
@@ -967,9 +967,12 @@ async fn start_run(
     state: tauri::State<'_, pipeline::RunState>,
     params: pipeline::RunParams,
 ) -> Result<(), String> {
-    let cfg = config::load(&app.path().app_config_dir().unwrap().join("config.json"))
+    let path = app.path().app_config_dir().unwrap().join("config.json");
+    let cfg = config::load(&path)
         .map_err(|e| e.to_string())?
-        .ok_or("config belum di-set (get_defaults dulu)")?;
+        // first launch: config.json belum ada → fallback ke auto-detect sibling
+        .or_else(|| config::detect(&std::env::current_dir().unwrap_or_default()))
+        .ok_or("config tidak ada dan sibling Good-Badminton-Cpp tidak terdeteksi")?;
     pipeline::spawn_run(app, state, cfg, params).await
 }
 
