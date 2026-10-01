@@ -69,6 +69,30 @@ pub fn detect(base: &Path) -> Option<Config> {
     None
 }
 
+/// Resource bundle tertanam installer (tauri.conf `bundle.resources`):
+/// `<resource_dir>/engine/gb_cpp(.exe)` + `<resource_dir>/models/*.onnx`.
+/// Menang atas sibling detect — app terpasang harus self-contained.
+pub fn detect_resource(resource: &Path) -> Option<Config> {
+    let exe = if cfg!(windows) {
+        resource.join("engine/gb_cpp.exe")
+    } else {
+        resource.join("engine/gb_cpp")
+    };
+    let ball = resource.join("models/yolo11s-ball.onnx");
+    let pose = resource.join("models/yolo11n-pose-dyn.onnx");
+    if exe.is_file() && ball.is_file() && pose.is_file() {
+        Some(Config {
+            gb_cpp_path: exe.to_string_lossy().into_owned(),
+            data_dir: resource.join("models").to_string_lossy().into_owned(),
+            ball_model: ball.to_string_lossy().into_owned(),
+            pose_model: pose.to_string_lossy().into_owned(),
+            defaults: RunDefaults::default(),
+        })
+    } else {
+        None
+    }
+}
+
 pub fn load(path: &Path) -> io::Result<Option<Config>> {
     if !path.exists() {
         return Ok(None);
@@ -106,6 +130,30 @@ mod tests {
         std::fs::create_dir_all(&base).unwrap();
         let cfg = detect(&base).expect("detect");
         assert!(cfg.gb_cpp_path.ends_with("gb_cpp.exe"));
+        assert!(cfg.pose_model.ends_with("yolo11n-pose-dyn.onnx"));
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn detect_resource_requires_engine_and_models() {
+        let root = std::env::temp_dir().join(format!("gb_res_{}", std::process::id()));
+        std::fs::create_dir_all(&root).ok();
+        assert!(detect_resource(&root).is_none());
+        std::fs::create_dir_all(root.join("engine")).unwrap();
+        std::fs::create_dir_all(root.join("models")).unwrap();
+        let exe = if cfg!(windows) {
+            root.join("engine/gb_cpp.exe")
+        } else {
+            root.join("engine/gb_cpp")
+        };
+        std::fs::write(&exe, b"x").unwrap();
+        std::fs::write(root.join("models/yolo11s-ball.onnx"), b"b").unwrap();
+        // pose belum ada → belum lengkap, harus None
+        assert!(detect_resource(&root).is_none());
+        std::fs::write(root.join("models/yolo11n-pose-dyn.onnx"), b"p").unwrap();
+        let cfg = detect_resource(&root).expect("resource");
+        assert!(cfg.gb_cpp_path.contains("gb_cpp"));
+        assert!(cfg.ball_model.ends_with("yolo11s-ball.onnx"));
         assert!(cfg.pose_model.ends_with("yolo11n-pose-dyn.onnx"));
         std::fs::remove_dir_all(&root).ok();
     }

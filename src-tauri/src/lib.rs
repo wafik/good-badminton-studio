@@ -16,9 +16,10 @@ async fn start_run(
     let path = app.path().app_config_dir().unwrap().join("config.json");
     let cfg = config::load(&path)
         .map_err(|e| e.to_string())?
-        // first launch: config.json belum ada → fallback ke auto-detect sibling
+        // prioritas: config.json (user) > bundle installer > sibling (dev)
+        .or_else(|| app.path().resource_dir().ok().and_then(|r| config::detect_resource(&r)))
         .or_else(|| config::detect(&std::env::current_dir().unwrap_or_default()))
-        .ok_or_else(|| format!("config tidak ada dan sibling tidak terdeteksi — buat config.json di {}", path.display()))?;
+        .ok_or_else(|| format!("config tidak ada, bundle & sibling tak terdeteksi — reinstall atau buat config.json di {}", path.display()))?;
     pipeline::spawn_run(app, state, cfg, params).await
 }
 
@@ -36,7 +37,9 @@ fn get_defaults(app: tauri::AppHandle) -> (Option<config::Config>, String, bool)
     let dir = app.path().app_config_dir().unwrap_or_default();
     let cfg = config::load(&dir.join("config.json")).ok().flatten();
     let base = std::env::current_dir().unwrap_or_default();
-    let detected = cfg.or_else(|| config::detect(&base));
+    let detected = cfg
+        .or_else(|| app.path().resource_dir().ok().and_then(|r| config::detect_resource(&r)))
+        .or_else(|| config::detect(&base));
     (detected, dir.to_string_lossy().into_owned(), which_ffmpeg())
 }
 

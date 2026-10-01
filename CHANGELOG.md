@@ -2,6 +2,23 @@
 
 All notable changes to Good-Badminton Studio are documented here.
 
+## v1.2 (2026-10-01)
+
+- **Self-contained installers** — the C++ engine (`gb_cpp` + runtime
+  libraries) and both ONNX models (`yolo11s-ball.onnx`,
+  `yolo11n-pose-dyn.onnx`) are now bundled into the installer; install and
+  run with no separate setup.
+- Engine resource lookup order: `config.json` (user override) → bundled
+  resources → sibling folder (development).
+- The macOS installer is now Apple Silicon (arm64) native instead of
+  universal.
+- The engine rebuilds across all three platforms in CI; version bumped to
+  1.2.0.
+- **GPU auto-detect (Windows)** — the bundled ONNX Runtime build enables
+  DirectML: NVIDIA/AMD/Intel GPUs are detected automatically, with
+  automatic CPU fallback when the GPU path is unavailable or fails
+  (results identical to CPU). Set `GB_FORCE_CPU=1` to force CPU.
+
 ## v1.1 (2026-10-01)
 
 - **Optional court template** — the Run tab no longer requires a template PNG.

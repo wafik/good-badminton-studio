@@ -27,11 +27,21 @@ without a GUI. Run these steps after `bun run tauri build` succeeds.
    shows the new entry with a playable preview.
 3. Run again, press Cancel midway → the `run-finished` event reports status
    `cancelled` and the `gb_cpp.exe` process is gone (verify in Task Manager).
+4. First-run bundle verification: after `bun run tauri build`, kill any
+   running instance (`taskkill //IM "Good-Badminton Studio_1.2.0_x64-setup.exe" //F`),
+   then install silently with the NSIS `/S` flag. Delete (or rename)
+   `config.json` in `%APPDATA%\com.ulin.good-badminton-studio\` and launch
+   the installed app → the Run tab shows an auto-detected `gb_cpp` path
+   pointing inside the install directory
+   (`…\Good-Badminton Studio\engine\gb_cpp.exe`) with both model paths under
+   `…\models\` — this proves the bundled resources are used, not a sibling
+   folder.
 
 ## Sign-off
 
 - [ ] Step 1 passed (window opens, paths + ffmpeg_ok correct)
 - [ ] Step 2 passed (progress, output button, detections.jsonl ≥ 5871 lines, history preview)
 - [ ] Step 3 passed (cancel → `cancelled`, process dead)
+- [ ] Step 4 passed (bundled engine + models auto-detected from install dir)
 
 Tester: ______________  Date: ______________

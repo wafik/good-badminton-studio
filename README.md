@@ -10,6 +10,7 @@ Desktop GUI for the **Good-Badminton** badminton video analysis pipeline — the
 - **Court** — 4-corner court picker on a canvas, exports `annotations.txt` ready for the C++ CLI.
 - **History** — list of past runs with preview of the result video (`detect_<name>.mp4`).
 - **Professional dark UI** — "broadcast desk" theme, IBM Plex Sans/Mono, 100% offline (fonts bundled).
+- **GPU auto-detect (Windows)** — an NVIDIA/AMD/Intel GPU is picked up automatically via DirectML; if no GPU works, the engine falls back to CPU with identical results. Set `GB_FORCE_CPU=1` to force CPU.
 
 ## Getting Started
 
@@ -29,9 +30,11 @@ Desktop GUI for the **Good-Badminton** badminton video analysis pipeline — the
 
 ## Requirements
 
-- The **Good-Badminton-Cpp** binary (`gb_cpp`) — auto-detected from the sibling `Good-Badminton-Cpp` folder, or point to it manually via `config.json` (the path is shown in the first-run error message). **The Studio app is only the GUI; the pipeline binary and the ONNX models (`yolo11s-ball.onnx`, `yolo11n-pose-dyn.onnx` under `<data_dir>/weights/`) must be installed separately.**
+- Download the installer for your OS from the GitHub Releases page — Windows (NSIS `.exe`), macOS (`.dmg`, Apple Silicon), or Linux (`.deb`/AppImage). The installer is self-contained: it already bundles the C++ engine (`gb_cpp` + runtime libraries) and both ONNX models, so no separate setup is needed. Install and run.
 - [ffmpeg](https://ffmpeg.org/) on `PATH` (optional, for saving audio).
 - [Bun](https://bun.sh) 1.4+ (development/build only).
+
+Developers can still override the bundled engine via `config.json` (`gb_cpp_path`, `ball_model`, `pose_model`); sibling-folder auto-detection still works in development.
 
 ## Development
 
