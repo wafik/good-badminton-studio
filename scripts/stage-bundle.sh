@@ -54,7 +54,17 @@ case "$(uname -s)" in
     ls "$ORTLIB"/libonnxruntime*.dylib >/dev/null 2>&1 || { echo "FATAL: ORT dylib tidak ada di $ORTLIB"; exit 1; }
     # tarik dependensi brew (@rpath) + ORT jadi sebelah binary
     dylibbundler -b -x "$OUT/engine/gb_cpp" -d "$OUT/engine" -p @loader_path -of -s "$ORTLIB/"
-    install_name_tool -add_rpath @loader_path "$OUT/engine/gb_cpp" 2>/dev/null || true
+    # dylibbundler -rpath: tiap rpath lama (CMake @loader_path, homebrew, ORT)
+    # diganti "@loader_path/" satu per satu, tanpa dedup → 3× LC_RPATH kembar
+    # di gb_cpp → dyld arm64 macOS SIGABRT (exit 134) saat smoke. Buang semua
+    # varian @loader_path, pasang satu, re-sign (install_name_tool inval sign).
+    for f in "$OUT/engine"/gb_cpp "$OUT/engine"/*.dylib; do
+      [ -f "$f" ] || continue
+      while install_name_tool -delete_rpath '@loader_path/' "$f" 2>/dev/null; do :; done
+      while install_name_tool -delete_rpath '@loader_path'  "$f" 2>/dev/null; do :; done
+      install_name_tool -add_rpath '@loader_path' "$f" 2>/dev/null || true
+      codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "$f" 2>/dev/null || true
+    done
     ;;
   *)
     cp "$CPP/build/gb_cpp" "$OUT/engine/"
