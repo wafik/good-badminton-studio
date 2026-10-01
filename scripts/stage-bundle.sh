@@ -9,6 +9,8 @@ CPP=$(cd "$CPP" && pwd)
 OUT=src-tauri/bundle
 rm -rf "$OUT/engine" "$OUT/models"
 mkdir -p "$OUT/engine" "$OUT/models"
+# .gitkeep selamat dari wipe — fresh clone tetap punya direktori resource
+touch "$OUT/engine/.gitkeep" "$OUT/models/.gitkeep"
 
 # --- models: lokal dulu (dev), kalau tidak ada tarik dari release cpp v1 ---
 REL=${GB_MODELS_URL:-https://github.com/wafik/good-badminton-cpp/releases/download/v1}
