@@ -18,6 +18,7 @@
 - Rally count di riwayat = port aturan `compare_parity.py:rally_count` (START_HITS=3, WINDOW=2.0, QUIET=4.0) di atas jsonl.
 - Toggle display pipeline (`--skeletons`, `--player-trajectories`, `--court-trajectory`, `--shuttlecock-trajectory`, `--player-stats`, `--pose-roi`) wajib default **true** (identik Python main.py — parity tidak boleh berubah). UI mengekspos semuanya; `config.json` menyimpan preferensi user (`defaults`), di-prefill ke form.
 - Git: init di folder Studio, commit tiap task.
+- UI (Tasks 6-8) wajib terlihat **profesional & calm** (user: "desain benar2 terlihat profesional"). Design tokens terpusat di `styles.css`: tema gelap teal ala broadcast-desk (`--bg` ink, `--accent` teal, kartu `--surface` + border halus), font **IBM Plex Sans/Mono** via `@fontsource` (bundled offline — jangan pakai font generic), hierarki tombol primary/ghost/danger, form per kartu berkelompok, pane console monospace. Semua ID elemen yang dirujuk logic (semua selector `#…` di brief) **tidak boleh berubah**. Selektor khusus Task 7 (court) & Task 8 (history) ditulis di `styles.css` Task 6 dengan komentar penanda — jangan ubah markup brief di task tersebut tanpa juga menyertakan class-nya.
 
 ## File Structure
 
@@ -1031,7 +1032,7 @@ git add -A && git commit -m "feat: pipeline spawn/cancel with progress events + 
 ### Task 6: Frontend — view Setup (run + progress + log)
 
 **Files:**
-- Modify: `index.html`
+- Modify: `index.html`, `package.json` (via `bun add` fontsource)
 - Create: `src/api.ts`, `src/setup.ts`, `src/styles.css`
 - Modify: `src/main.ts`
 
@@ -1085,7 +1086,7 @@ export const saveAnnotations = (path: string, corners: number[][], mid: number) 
   invoke<void>("save_annotations", { path, corners, midHeight: mid });
 ```
 
-- [ ] **Step 2: `index.html`** — nav 3 tab + section per view:
+- [ ] **Step 2: `index.html`** — topbar (brand + 3 tab) + section per view:
 
 ```html
 <!doctype html>
@@ -1093,15 +1094,24 @@ export const saveAnnotations = (path: string, corners: number[][], mid: number) 
   <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Good-Badminton Studio</title></head>
   <body>
-    <nav>
-      <button data-view="setup" class="active">Run</button>
-      <button data-view="corners">Court</button>
-      <button data-view="history">History</button>
+    <nav class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+          <rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/>
+          <path d="M3.5 12h17M8.5 4.5v15M15.5 4.5v15"/>
+        </svg>
+        <span class="brand-name">GOOD-BADMINTON <em>STUDIO</em></span>
+      </div>
+      <div class="tabs">
+        <button data-view="setup" class="tab active">Run</button>
+        <button data-view="corners" class="tab">Court</button>
+        <button data-view="history" class="tab">History</button>
+      </div>
     </nav>
     <main>
-      <section id="view-setup"></section>
-      <section id="view-corners" hidden></section>
-      <section id="view-history" hidden></section>
+      <section id="view-setup" class="view"></section>
+      <section id="view-corners" class="view" hidden></section>
+      <section id="view-history" class="view" hidden></section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
@@ -1116,29 +1126,89 @@ import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { startRun, cancelRun, getDefaults, saveConfig, type RunParams } from "./api";
 
+let t0 = 0;
+let listenersBound = false;
+
 export function renderSetup(root: HTMLElement) {
   root.innerHTML = `
-    <div class="form">
-      <label>Video <input id="v-video" readonly /><button id="p-video">…</button></label>
-      <label>Template <input id="v-template" readonly /><button id="p-template">…</button></label>
-      <label>Output dir <input id="v-out" readonly /><button id="p-out">…</button></label>
-      <label>Annotations <input id="v-ann" readonly /><button id="p-ann">…</button> (opsional)</label>
-      <label>Audio <input type="checkbox" id="v-audio" checked /></label>
-      <label>Language <select id="v-lang"><option value="zh">zh</option><option value="en">en</option></select></label>
-      <fieldset class="params">
-        <legend>Display</legend>
-        <label><input type="checkbox" id="p-skel" checked> Skeleton</label>
-        <label><input type="checkbox" id="p-trail" checked> Player trail</label>
-        <label><input type="checkbox" id="p-court" checked> Court trail</label>
-        <label><input type="checkbox" id="p-shuttle" checked> Shuttle trail</label>
-        <label><input type="checkbox" id="p-stats" checked> Stats panel</label>
-        <label><input type="checkbox" id="p-roi" checked> Pose ROI</label>
-      </fieldset>
-      <button id="b-run">Run</button><button id="b-cancel" disabled>Cancel</button>
-      <button id="b-open" hidden>Buka folder output</button>
-    </div>
-    <progress id="prog" value="0" max="100"></progress><span id="eta"></span>
-    <pre id="log"></pre>`;
+    <div class="pane-grid">
+      <div class="stack">
+        <section class="card">
+          <header class="card-head"><h2>Source</h2></header>
+          <div class="field">
+            <span class="field-label">Video</span>
+            <div class="picker">
+              <input id="v-video" readonly placeholder="Pilih video pertandingan…" />
+              <button id="p-video" class="btn btn-ghost" type="button">Browse</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">Template lapangan</span>
+            <div class="picker">
+              <input id="v-template" readonly placeholder="PNG template sudut lapangan…" />
+              <button id="p-template" class="btn btn-ghost" type="button">Browse</button>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <header class="card-head"><h2>Output</h2></header>
+          <div class="field">
+            <span class="field-label">Folder output</span>
+            <div class="picker">
+              <input id="v-out" readonly placeholder="Folder tujuan hasil analisis…" />
+              <button id="p-out" class="btn btn-ghost" type="button">Browse</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">Anotasi lapangan <em class="opt">opsional</em></span>
+            <div class="picker">
+              <input id="v-ann" readonly placeholder="court_annotations.txt — kosongkan untuk auto-detect" />
+              <button id="p-ann" class="btn btn-ghost" type="button">Browse</button>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <header class="card-head"><h2>Parameters</h2></header>
+          <div class="row">
+            <label class="switch-row">
+              <input type="checkbox" id="v-audio" class="switch" checked />
+              <span>Simpan audio</span>
+            </label>
+            <div class="field field-half">
+              <span class="field-label">Bahasa</span>
+              <select id="v-lang"><option value="zh">zh</option><option value="en">en</option></select>
+            </div>
+          </div>
+          <fieldset class="params">
+            <legend>Display overlay</legend>
+            <div class="tog-grid">
+              <label class="tog"><input type="checkbox" id="p-skel" checked /><span>Skeleton</span></label>
+              <label class="tog"><input type="checkbox" id="p-trail" checked /><span>Player trail</span></label>
+              <label class="tog"><input type="checkbox" id="p-court" checked /><span>Court trail</span></label>
+              <label class="tog"><input type="checkbox" id="p-shuttle" checked /><span>Shuttle trail</span></label>
+              <label class="tog"><input type="checkbox" id="p-stats" checked /><span>Stats panel</span></label>
+              <label class="tog"><input type="checkbox" id="p-roi" checked /><span>Pose ROI</span></label>
+            </div>
+          </fieldset>
+          <div class="actions">
+            <button id="b-run" class="btn btn-primary" type="button">Run analysis</button>
+            <button id="b-cancel" class="btn btn-danger" type="button" disabled>Cancel</button>
+            <button id="b-open" class="btn btn-ghost" type="button" hidden>Buka folder output</button>
+          </div>
+        </section>
+      </div>
+      <div class="stack">
+        <section class="card progress-card">
+          <header class="card-head"><h2>Progress</h2></header>
+          <progress id="prog" value="0" max="100"></progress>
+          <span id="eta" class="mono">—</span>
+        </section>
+        <section class="card console">
+          <header class="card-head"><h2>Console</h2></header>
+          <pre id="log" aria-live="polite"></pre>
+        </section>
+      </div>
+    </div>`;
 
   const pick = async (opts: any) => (await open({ multiple: false, ...opts })) as string | null;
   root.querySelector("#p-video")!.addEventListener("click", async () => {
@@ -1175,29 +1245,32 @@ export function renderSetup(root: HTMLElement) {
     for (const [id, v] of pairs) (root.querySelector(id) as HTMLInputElement).checked = v;
   });
 
-  let t0 = 0;
-  listen<{ frame: number; total: number }>("progress", (e) => {
-    if (!t0) t0 = Date.now();
-    const { frame, total } = e.payload;
-    const bar = root.querySelector("#prog") as HTMLProgressElement;
-    bar.value = (frame / total) * 100;
-    const rate = frame / ((Date.now() - t0) / 1000);
-    const eta = rate > 0 ? Math.round((total - frame) / rate) : 0;
-    (root.querySelector("#eta") as HTMLElement).textContent = `${frame}/${total} · ETA ${eta}s`;
-  });
-  listen<{ line: string }>("log", (e) => {
-    const log = root.querySelector("#log")!;
-    log.textContent += e.payload.line + "\n";
-    log.scrollTop = log.scrollHeight;
-  });
-  listen<{ status: string; output_dir: string }>("run-finished", (e) => {
-    (root.querySelector("#b-run") as HTMLButtonElement).disabled = false;
-    (root.querySelector("#b-cancel") as HTMLButtonElement).disabled = true;
-    const b = root.querySelector("#b-open") as HTMLButtonElement;
-    b.hidden = e.payload.status !== "ok";
-    b.onclick = () => openPath(e.payload.output_dir);
-    (root.querySelector("#eta") as HTMLElement).textContent = `selesai: ${e.payload.status}`;
-  });
+  // listen() global — cukup sekali; handler selalu query DOM via root saat event tiba
+  if (!listenersBound) {
+    listenersBound = true;
+    listen<{ frame: number; total: number }>("progress", (e) => {
+      if (!t0) t0 = Date.now();
+      const { frame, total } = e.payload;
+      const bar = root.querySelector("#prog") as HTMLProgressElement;
+      bar.value = (frame / total) * 100;
+      const rate = frame / ((Date.now() - t0) / 1000);
+      const eta = rate > 0 ? Math.round((total - frame) / rate) : 0;
+      (root.querySelector("#eta") as HTMLElement).textContent = `${frame}/${total} · ETA ${eta}s`;
+    });
+    listen<{ line: string }>("log", (e) => {
+      const log = root.querySelector("#log")!;
+      log.textContent += e.payload.line + "\n";
+      log.scrollTop = log.scrollHeight;
+    });
+    listen<{ status: string; output_dir: string }>("run-finished", (e) => {
+      (root.querySelector("#b-run") as HTMLButtonElement).disabled = false;
+      (root.querySelector("#b-cancel") as HTMLButtonElement).disabled = true;
+      const b = root.querySelector("#b-open") as HTMLButtonElement;
+      b.hidden = e.payload.status !== "ok";
+      b.onclick = () => openPath(e.payload.output_dir);
+      (root.querySelector("#eta") as HTMLElement).textContent = `selesai: ${e.payload.status}`;
+    });
+  }
 
   root.querySelector("#b-run")!.addEventListener("click", async () => {
     t0 = 0;
@@ -1246,10 +1319,19 @@ export function renderSetup(root: HTMLElement) {
 }
 ```
 
-- [ ] **Step 4: `src/main.ts`** — nav switching + render setup:
+- [ ] **Step 4: Font bundle + `src/main.ts`** — nav switching + render setup:
+
+```bash
+bun add @fontsource/ibm-plex-sans @fontsource/ibm-plex-mono
+```
 
 ```ts
 import "./styles.css";
+import "@fontsource/ibm-plex-sans/400.css";
+import "@fontsource/ibm-plex-sans/500.css";
+import "@fontsource/ibm-plex-sans/600.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
 import { renderSetup } from "./setup";
 // renderCorners/renderHistory menyusul di Task 7-8 (import bertahap)
 
@@ -1269,7 +1351,477 @@ document.querySelectorAll("nav button").forEach((b) =>
 show("setup");
 ```
 
-- [ ] **Step 5: `styles.css`** minimal (dark, form grid, log monospace) + gate build:
+- [ ] **Step 5: `src/styles.css`** — design system penuh (tema broadcast-desk) + gate build:
+
+```css
+/* Good-Badminton Studio — broadcast-desk theme (calm, informative, profesional) */
+
+:root {
+  --bg: #0a1116;
+  --surface: #101a21;
+  --surface-2: #15222b;
+  --line: #1d2f3b;
+  --line-soft: #16242e;
+  --ink: #dce8ef;
+  --muted: #8098a9;
+  --faint: #4e6577;
+  --accent: #43dcc9;
+  --accent-ink: #06231f;
+  --accent-soft: rgba(67, 220, 201, 0.1);
+  --accent-line: rgba(67, 220, 201, 0.38);
+  --ok: #74d68f;
+  --warn: #e0b552;
+  --err: #e57b74;
+  --err-soft: rgba(229, 123, 116, 0.12);
+  --radius: 10px;
+  --radius-sm: 7px;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font: 14px/1.5 var(--font-sans);
+  background:
+    radial-gradient(1100px 480px at 72% -8%, rgba(67, 220, 201, 0.055), transparent 60%),
+    repeating-linear-gradient(90deg, transparent 0 119px, rgba(255, 255, 255, 0.014) 119px 120px),
+    var(--bg);
+  min-height: 100vh;
+}
+
+::selection { background: var(--accent-line); color: #fff; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- topbar --- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 52px;
+  padding: 0 20px;
+  background: rgba(10, 17, 22, 0.86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark { width: 22px; height: 22px; color: var(--accent); }
+.brand-name {
+  font: 600 12.5px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+.brand-name em { font-style: normal; color: var(--accent); }
+
+.tabs { display: flex; gap: 4px; }
+.tab {
+  position: relative;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 500 12px/1 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.tab:hover { color: var(--ink); }
+.tab.active { color: var(--ink); }
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+/* --- layout --- */
+main { padding: 20px 22px 36px; max-width: 1280px; margin: 0 auto; }
+
+.pane-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 1.25fr;
+  gap: 18px;
+  align-items: start;
+}
+.stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+@media (max-width: 960px) {
+  .pane-grid { grid-template-columns: 1fr; }
+}
+
+/* --- cards + stagger --- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 16px 18px 18px;
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.card-head h2 {
+  margin: 0;
+  font: 600 11.5px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.view:not([hidden]) > .pane-grid > .stack > .card,
+.view:not([hidden]) > .hist-grid {
+  animation: rise 0.38s ease both;
+}
+.view:not([hidden]) > .pane-grid > .stack > .card:nth-child(2) { animation-delay: 0.06s; }
+.view:not([hidden]) > .pane-grid > .stack:nth-child(2) > .card:nth-child(1) { animation-delay: 0.12s; }
+.view:not([hidden]) > .pane-grid > .stack:nth-child(2) > .card:nth-child(2) { animation-delay: 0.18s; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- fields --- */
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font: 500 11.5px/1 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field-label .opt {
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--faint);
+  margin-left: 6px;
+}
+.field-half { flex: 1; min-width: 120px; margin-bottom: 0; }
+
+.picker { display: flex; gap: 8px; }
+
+input, select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 11px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font: 13.5px/1.4 var(--font-sans);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input::placeholder { color: var(--faint); }
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.picker input { flex: 1; }
+select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+.num { width: 96px; font-family: var(--font-mono); }
+
+/* --- buttons --- */
+.btn {
+  padding: 8px 15px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font: 500 13px/1.2 var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.btn:disabled { opacity: 0.42; cursor: not-allowed; }
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+.btn-ghost:hover:not(:disabled) { border-color: var(--accent-line); }
+.btn-danger {
+  background: transparent;
+  border-color: rgba(229, 123, 116, 0.45);
+  color: var(--err);
+}
+.btn-danger:hover:not(:disabled) { background: var(--err-soft); }
+
+.actions { display: flex; gap: 10px; margin-top: 16px; }
+
+/* --- parameters --- */
+.row { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 14px; }
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.switch {
+  appearance: none;
+  width: 36px;
+  height: 19px;
+  flex: none;
+  border-radius: 99px;
+  background: var(--line);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.18s ease;
+  padding: 0;
+}
+.switch::before {
+  content: "";
+  position: absolute;
+  top: 2.5px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.switch:checked { background: var(--accent); }
+.switch:checked::before { transform: translateX(16px); background: var(--accent-ink); }
+
+.params { border: 0; margin: 0; padding: 0; }
+.params legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font: 500 11.5px/1 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.tog {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.tog:hover { border-color: var(--line); }
+.tog:has(input:checked) {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.tog input {
+  width: auto;
+  accent-color: var(--accent);
+  padding: 0;
+}
+
+/* --- progress + console --- */
+.progress-card progress {
+  width: 100%;
+  height: 10px;
+  appearance: none;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: var(--surface-2);
+  overflow: hidden;
+  display: block;
+}
+progress::-webkit-progress-bar { background: var(--surface-2); }
+progress::-webkit-progress-value {
+  background: linear-gradient(90deg, rgba(67, 220, 201, 0.55), var(--accent));
+  border-radius: 5px;
+}
+progress::-moz-progress-bar {
+  background: linear-gradient(90deg, rgba(67, 220, 201, 0.55), var(--accent));
+  border-radius: 5px;
+}
+.mono { font-family: var(--font-mono); }
+#eta {
+  display: block;
+  margin-top: 9px;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.console { padding-bottom: 0; }
+.console .card-head { margin-bottom: 0; border-bottom: 0; padding-bottom: 0; }
+#log {
+  margin: 12px -18px -18px;
+  padding: 13px 16px;
+  height: min(38vh, 420px);
+  overflow: auto;
+  background: #080e12;
+  border-top: 1px solid var(--line-soft);
+  border-radius: 0 0 var(--radius) var(--radius);
+  color: #9fbccd;
+  font: 12.5px/1.6 var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+#log::-webkit-scrollbar { width: 10px; }
+#log::-webkit-scrollbar-thumb { background: var(--line); border-radius: 5px; border: 2px solid #080e12; }
+
+/* --- Task 7 hooks: court picker --- */
+.court-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.court-bar .field-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 11.5px/1 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.chip {
+  padding: 5px 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  font: 500 12px/1.3 var(--font-mono);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.canvas-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 18px;
+  overflow: auto;
+}
+#c-canvas {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: crosshair;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+}
+
+/* --- Task 8 hooks: history --- */
+.hist-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) 1.4fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .hist-grid { grid-template-columns: 1fr; }
+}
+.hist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.hist-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "status name" "status meta";
+  gap: 2px 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.hist-item:last-child { border-bottom: 0; }
+.hist-item:hover { background: var(--surface-2); }
+.hist-status {
+  grid-area: status;
+  align-self: start;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font: 600 10.5px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.s-ok { background: rgba(116, 214, 143, 0.14); color: var(--ok); }
+.s-failed { background: var(--err-soft); color: var(--err); }
+.s-cancelled { background: rgba(128, 152, 169, 0.14); color: var(--muted); }
+.hist-name { grid-area: name; font-size: 13.5px; font-weight: 500; }
+.hist-meta {
+  grid-area: meta;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.hist-empty {
+  padding: 26px 14px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 13px;
+  cursor: default;
+}
+.hist-detail { min-height: 200px; }
+.hist-detail:empty::after {
+  content: "Pilih run untuk melihat preview";
+  display: block;
+  padding: 64px 0;
+  text-align: center;
+  color: var(--faint);
+  font-size: 13px;
+}
+.hist-video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  border-radius: 6px;
+  background: #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+```
 
 ```bash
 bun run build
@@ -1303,11 +1855,13 @@ import { saveAnnotations } from "./api";
 
 export function renderCorners(root: HTMLElement) {
   root.innerHTML = `
-    <button id="c-open">Buka template…</button>
-    <canvas id="c-canvas" width="478" height="850"></canvas>
-    <label>mid_height <input id="c-mid" type="number" value="625" /></label>
-    <div id="c-pts">Titik: 0/4</div>
-    <button id="c-save" disabled>Simpan annotations</button>`;
+    <div class="court-bar">
+      <button id="c-open" class="btn btn-ghost" type="button">Buka template…</button>
+      <span id="c-pts" class="chip">Titik: 0/4</span>
+      <label class="field-inline">mid_height <input id="c-mid" class="num" type="number" value="625" /></label>
+      <button id="c-save" class="btn btn-primary" type="button" disabled>Simpan annotations</button>
+    </div>
+    <div class="canvas-wrap card"><canvas id="c-canvas" width="478" height="850"></canvas></div>`;
   const canvas = root.querySelector("#c-canvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d")!;
   const pts: [number, number][] = [];
@@ -1317,19 +1871,32 @@ export function renderCorners(root: HTMLElement) {
   const redraw = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (img) ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#0f0";
-    ctx.lineWidth = 2;
-    pts.forEach(([x, y]) => {
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2);
-      ctx.stroke();
-    });
-    if (pts.length === 4) {
+    // connector antar titik (aksen teal; dashed sampai 4 titik lengkap)
+    if (pts.length >= 2) {
+      ctx.strokeStyle = "rgba(67, 220, 201, 0.9)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash(pts.length === 4 ? [] : [6, 4]);
       ctx.beginPath();
       pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-      ctx.closePath();
+      if (pts.length === 4) ctx.closePath();
       ctx.stroke();
+      ctx.setLineDash([]);
     }
+    // marker bernomor (urutan klik)
+    ctx.font = "600 11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    pts.forEach(([x, y], i) => {
+      ctx.beginPath();
+      ctx.arc(x, y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = "#43dcc9";
+      ctx.fill();
+      ctx.strokeStyle = "#06231f";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#06231f";
+      ctx.fillText(String(i + 1), x, y + 0.5);
+    });
     (root.querySelector("#c-pts") as HTMLElement).textContent = `Titik: ${pts.length}/4`;
     (root.querySelector("#c-save") as HTMLButtonElement).disabled = pts.length !== 4;
   };
@@ -1434,14 +2001,23 @@ interface Entry {
 
 export async function renderHistory(root: HTMLElement) {
   const items = await invoke<Entry[]>("list_history");
-  root.innerHTML = `<ul id="h-list">${items
-    .map(
-      (e) => `<li data-out="${e.output_dir}" data-video="${e.video}">
-        <b>${e.status}</b> ${e.video.split(/[\\/]/).pop()} · ${e.elapsed_sec.toFixed(0)}s
-        · rally ${e.rally_count ?? "-"}
-      </li>`,
-    )
-    .join("")}</ul><div id="h-detail"></div>`;
+  root.innerHTML = `
+    <div class="hist-grid">
+      <ul id="h-list" class="hist-list">${
+        items.length
+          ? items
+              .map(
+                (e) => `<li class="hist-item" data-out="${e.output_dir}" data-video="${e.video}">
+          <span class="hist-status s-${e.status}">${e.status}</span>
+          <span class="hist-name">${e.video.split(/[\\/]/).pop()}</span>
+          <span class="hist-meta mono">${e.elapsed_sec.toFixed(0)}s · rally ${e.rally_count ?? "—"}</span>
+        </li>`,
+              )
+              .join("")
+          : `<li class="hist-empty">Belum ada run — jalankan analisis di tab Run</li>`
+      }</ul>
+      <div id="h-detail" class="hist-detail card"></div>
+    </div>`;
   root.querySelectorAll("#h-list li").forEach((li) => {
     li.addEventListener("click", async () => {
       const out = (li as HTMLElement).dataset.out!;
@@ -1449,7 +2025,7 @@ export async function renderHistory(root: HTMLElement) {
       const detail = root.querySelector("#h-detail") as HTMLElement;
       if (!out) return;
       const src = convertFileSrc(`${out}/detect_${name}.mp4`);
-      detail.innerHTML = `<video controls src="${src}" style="max-height:70vh"></video>`;
+      detail.innerHTML = `<video class="hist-video" controls src="${src}"></video>`;
     });
   });
 }
