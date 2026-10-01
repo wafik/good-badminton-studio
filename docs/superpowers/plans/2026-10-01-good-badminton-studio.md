@@ -14,7 +14,7 @@
 - Target: Windows x64 (MSVC). Repo folder: `C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Studio`.
 - Pipeline `Good-Badminton-Cpp` hanya boleh **ditambah flag opsional** `--progress-json` (default off ⇒ perilaku CLI identik).
 - Anotasi lapangan harus byte-format persis yang dibaca pipeline: 3 baris `corners=[(x, y), ...]`, `roi_corners=[(x, y), (x, y)]`, `mid_height=<int>` (reader: `src/system.cpp:235-273` — line 2 di-skip, roi selalu recompute).
-- Model/paths default: sibling `Good-Badminton-Cpp/build/Release/gb_cpp.exe`, data dir `Good-Badminton/` (weights `yolo11n-pose-dyn.onnx` + `yolo11s-ball.onnx`), semuanya di-overridable via config.
+- Model/paths default: sibling `Good-Badminton-Cpp/build/Release/gb_cpp.exe`, data dir `Good-Badminton/` (weights `yolo11n-pose-dyn.onnx` + `yolo11s-ball.onnx`), semuanya di-overridable via config. Deteksi wajib menoleransi lintas-OS: `gb_cpp.exe` (Windows) maupun `gb_cpp` (macOS/Linux), path `build/Release/` maupun `build/`.
 - Rally count di riwayat = port aturan `compare_parity.py:rally_count` (START_HITS=3, WINDOW=2.0, QUIET=4.0) di atas jsonl.
 - Git: init di folder Studio, commit tiap task.
 
@@ -525,19 +525,29 @@ pub struct Config {
     pub pose_model: String,
 }
 
-/// Cari sibling: <root>/Good-Badminton-Cpp/build/Release/gb_cpp.exe + <root>/Good-Badminton/weights.
+/// Cari sibling: binary pipeline (gb_cpp.exe di Windows, gb_cpp di
+/// macOS/Linux; build/Release utk VS, build/ utk Make/Ninja) + <root>/Good-Badminton/weights.
 pub fn detect(base: &Path) -> Option<Config> {
+    const EXES: &[&str] = &[
+        "Good-Badminton-Cpp/build/Release/gb_cpp.exe",
+        "Good-Badminton-Cpp/build/Release/gb_cpp",
+        "Good-Badminton-Cpp/build/gb_cpp",
+        "Good-Badminton-Cpp/build/gb_cpp.exe",
+    ];
     for anc in base.ancestors().take(6) {
-        let exe = anc.join("Good-Badminton-Cpp/build/Release/gb_cpp.exe");
         let data = anc.join("Good-Badminton");
-        if exe.is_file() && data.is_dir() {
-            return Some(Config {
-                gb_cpp_path: exe.to_string_lossy().into_owned(),
-                data_dir: data.to_string_lossy().into_owned(),
-                ball_model: data.join("weights/yolo11s-ball.onnx").to_string_lossy().into_owned(),
-                pose_model: data.join("weights/yolo11n-pose-dyn.onnx").to_string_lossy().into_owned(),
-            });
+        if !data.is_dir() {
+            continue;
         }
+        let Some(exe) = EXES.iter().map(|e| anc.join(e)).find(|p| p.is_file()) else {
+            continue;
+        };
+        return Some(Config {
+            gb_cpp_path: exe.to_string_lossy().into_owned(),
+            data_dir: data.to_string_lossy().into_owned(),
+            ball_model: data.join("weights/yolo11s-ball.onnx").to_string_lossy().into_owned(),
+            pose_model: data.join("weights/yolo11n-pose-dyn.onnx").to_string_lossy().into_owned(),
+        });
     }
     None
 }

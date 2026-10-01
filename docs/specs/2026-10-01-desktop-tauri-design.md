@@ -53,7 +53,11 @@ Folder: `C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Studio`
 
 Heatmaps, webui lama, multi-bahasa UI (hanya toggle en/zh untuk
 pipeline), port pipeline ke macOS/Linux (tahap berikutnya),
-real-time pose preview in-app.
+real-time pose preview in-app. Port pipeline ke Rust juga non-goal:
+target macOS/Linux dicapai dengan **compile C++ per platform**
+(ONNX Runtime + OpenCV tersedia di sana) — bukan rewrite. Tahap
+berikutnya setelah v1 Windows: build C++ di mac/Linux + installer
+per-OS (dmg/AppImage).
 
 ## Risks / notes
 
