@@ -2023,6 +2023,7 @@ interface Entry {
   video: string;
   template: string;
   status: string;
+  started_at: string;
   elapsed_sec: number;
   output_dir: string;
   rally_count: number | null;
@@ -2039,7 +2040,7 @@ export async function renderHistory(root: HTMLElement) {
                 (e) => `<li class="hist-item" data-out="${e.output_dir}" data-video="${e.video}">
           <span class="hist-status s-${e.status}">${e.status}</span>
           <span class="hist-name">${e.video.split(/[\\/]/).pop()}</span>
-          <span class="hist-meta mono">${e.elapsed_sec.toFixed(0)}s · rally ${e.rally_count ?? "—"}</span>
+          <span class="hist-meta mono">${e.started_at ? new Date(Number(e.started_at) * 1000).toLocaleString() : "—"} · ${e.elapsed_sec.toFixed(0)}s · rally ${e.rally_count ?? "—"}</span>
         </li>`,
               )
               .join("")
