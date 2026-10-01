@@ -31,6 +31,9 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
       - name: Linux system deps
         if: matrix.platform == 'ubuntu-22.04'
         run: |
