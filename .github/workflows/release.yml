@@ -77,6 +77,11 @@ jobs:
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
             extra+=(-DOpenCV_DIR="$(brew --prefix opencv)/lib/cmake/opencv4")
           fi
+          if [ "${{ matrix.platform }}" = "windows-latest" ]; then
+            # VS2026 runner (MSVC 19.51) not in OpenCV 4.10's runtime ladder —
+            # force the shipped vc16 pack (ABI-compatible import libs).
+            extra+=(-DOpenCV_ARCH=x64 -DOpenCV_RUNTIME=vc16)
+          fi
           cmake -S cpp-engine-src -B cpp-engine-src/build -DCMAKE_BUILD_TYPE=Release ${extra[@]+"${extra[@]}"}
           cmake --build cpp-engine-src/build --config Release -j
 
