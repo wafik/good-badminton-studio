@@ -48,11 +48,12 @@ case "$(uname -s)" in
     ;;
   Darwin)
     cp "$CPP/build/gb_cpp" "$OUT/engine/"
-    for f in "$CPP"/third_party/onnxruntime-osx-arm64-1.19.2/lib/libonnxruntime*.dylib; do
-      [ -f "$f" ] && cp -L "$f" "$OUT/engine/$(basename "$f")"
-    done
-    # tarik dependensi brew (@rpath) jadi sebelah binary
-    dylibbundler -b -x "$OUT/engine/gb_cpp" -d "$OUT/engine" -p @loader_path -of
+    # JANGAN pre-copy ORT: dylibbundler resolve @rpath/@loader_path → dest dir
+    # sendiri → cp source==dest ("identical") → exit 1. Cari sumber via -s.
+    ORTLIB="$CPP/third_party/onnxruntime-osx-arm64-1.19.2/lib"
+    ls "$ORTLIB"/libonnxruntime*.dylib >/dev/null 2>&1 || { echo "FATAL: ORT dylib tidak ada di $ORTLIB"; exit 1; }
+    # tarik dependensi brew (@rpath) + ORT jadi sebelah binary
+    dylibbundler -b -x "$OUT/engine/gb_cpp" -d "$OUT/engine" -p @loader_path -of -s "$ORTLIB/"
     install_name_tool -add_rpath @loader_path "$OUT/engine/gb_cpp" 2>/dev/null || true
     ;;
   *)
