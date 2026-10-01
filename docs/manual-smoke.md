@@ -35,13 +35,18 @@ without a GUI. Run these steps after `bun run tauri build` succeeds.
    pointing inside the install directory
    (`…\Good-Badminton Studio\engine\gb_cpp.exe`) with both model paths under
    `…\models\` — this proves the bundled resources are used, not a sibling
-   folder.
+   folder. Start a run: the log shows
+   `[gpu] DirectML execution provider aktif (GPU terdeteksi otomatis)`, then
+   either runs on the GPU or prints
+   `[gpu] DirectML gagal saat inferensi → fallback CPU` and continues on CPU
+   — both are success paths (results identical; `GB_FORCE_CPU=1` skips GPU
+   entirely).
 
 ## Sign-off
 
 - [ ] Step 1 passed (window opens, paths + ffmpeg_ok correct)
 - [ ] Step 2 passed (progress, output button, detections.jsonl ≥ 5871 lines, history preview)
 - [ ] Step 3 passed (cancel → `cancelled`, process dead)
-- [ ] Step 4 passed (bundled engine + models auto-detected from install dir)
+- [ ] Step 4 passed (bundled engine + models auto-detected from install dir, GPU log line present)
 
 Tester: ______________  Date: ______________
