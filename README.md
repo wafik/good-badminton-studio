@@ -11,6 +11,22 @@ Desktop GUI untuk pipeline analisis video bulu tangkis **Good-Badminton** — bu
 - **History** — daftar run sebelumnya + preview video hasil (`detect_<nama>.mp4`).
 - **Professional dark UI** — tema "broadcast desk", IBM Plex Sans/Mono, 100% offline (font dibundel).
 
+## Cara Penggunaan
+
+1. **Tab Run — tentukan input**
+   - **Video**: Browse ke video pertandingan (mp4/mov/…).
+   - **Template lapangan**: Browse ke PNG template sudut lapangan (kosongkan untuk pakai template default).
+   - **Folder output**: tujuan hasil analisis (default `outputs/<nama-video>`).
+   - **Parameters**: audio on/off, bahasa (`zh`/`en`), dan 6 toggle display (skeletons, trajectories, player stats, pose ROI). Default semua `true` = sama dengan CLI Python.
+   - Klik **Run analysis** → progress bar + ETA + log live berjalan. **Cancel** menghentikan di tengah jalan. Selesai → tombol **Buka folder output** muncul.
+2. **Tab Court — (opsional) anotasi sudut lapangan**
+   - **Buka template…** pilih PNG lapangan, lalu klik **4 titik sudut** berurutan (chip `Titik: 0/4` → `4/4`).
+   - Sesuaikan `mid_height` bila perlu (default 625), klik **Simpan annotations** → file `annotations.txt` siap dipakai tab Run (`--annotations`).
+3. **Tab History — hasil & preview**
+   - Setiap run tercatat: status (`ok`/`failed`/`cancelled`), waktu, durasi, jumlah rally.
+   - Klik satu baris → **preview video hasil** (`detect_<nama-video>.mp4`) + detail langsung di panel.
+4. **Output** — di folder output: video hasil, `detections.jsonl` (per-frame), dan `court_annotations.txt`.
+
 ## Prasyarat
 
 - Binary **Good-Badminton-Cpp** (`gb_cpp`) — deteksi otomatis dari folder sibling `Good-Badminton-Cpp`, atau arahkan manual lewat `config.json` (path tampil di pesan error first-run).

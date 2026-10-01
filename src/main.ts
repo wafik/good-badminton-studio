@@ -14,7 +14,7 @@ const views: Record<string, (el: HTMLElement) => void> = {
   history: (el) => { void renderHistory(el); },
 };
 function show(name: string) {
-  document.querySelectorAll("main section").forEach((s) => ((s as HTMLElement).hidden = s.id !== `view-${name}`));
+  document.querySelectorAll("main > section").forEach((s) => ((s as HTMLElement).hidden = s.id !== `view-${name}`));
   document.querySelectorAll("nav button").forEach((b) =>
     (b as HTMLButtonElement).classList.toggle("active", (b as HTMLButtonElement).dataset.view === name));
   const el = document.getElementById(`view-${name}`);
