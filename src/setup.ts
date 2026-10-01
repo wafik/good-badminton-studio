@@ -20,9 +20,9 @@ export function renderSetup(root: HTMLElement) {
             </div>
           </div>
           <div class="field">
-            <span class="field-label">Template lapangan</span>
+            <span class="field-label">Template lapangan <span class="opt">(opsional)</span></span>
             <div class="picker">
-              <input id="v-template" readonly placeholder="PNG template sudut lapangan…" />
+              <input id="v-template" readonly placeholder="kosongkan = auto (frame dari video)…" />
               <button id="p-template" class="btn btn-ghost" type="button">Browse</button>
             </div>
           </div>
@@ -172,7 +172,7 @@ export function renderSetup(root: HTMLElement) {
       show_player_stats: chk("#p-stats"),
       show_pose_roi: chk("#p-roi"),
     };
-    if (!params.video || !params.template || !params.out_dir) return alert("lengkapi video/template/output");
+    if (!params.video || !params.out_dir) return alert("lengkapi video & folder output");
     (root.querySelector("#b-run") as HTMLButtonElement).disabled = true;
     (root.querySelector("#b-cancel") as HTMLButtonElement).disabled = false;
     (root.querySelector("#log") as HTMLElement).textContent = "";

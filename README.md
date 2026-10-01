@@ -15,7 +15,7 @@ Desktop GUI untuk pipeline analisis video bulu tangkis **Good-Badminton** — bu
 
 1. **Tab Run — tentukan input**
    - **Video**: Browse ke video pertandingan (mp4/mov/…).
-   - **Template lapangan**: Browse ke PNG template sudut lapangan (kosongkan untuk pakai template default).
+   - **Template lapangan** *(opsional)*: kosongkan saja — pipeline otomatis memilih frame dari video yang lolos deteksi sudut (disimpan sebagai `auto_template.png` di folder output). Browse hanya bila ingin memakai PNG template sendiri.
    - **Folder output**: tujuan hasil analisis (default `outputs/<nama-video>`).
    - **Parameters**: audio on/off, bahasa (`zh`/`en`), dan 6 toggle display (skeletons, trajectories, player stats, pose ROI). Default semua `true` = sama dengan CLI Python.
    - Klik **Run analysis** → progress bar + ETA + log live berjalan. **Cancel** menghentikan di tengah jalan. Selesai → tombol **Buka folder output** muncul.

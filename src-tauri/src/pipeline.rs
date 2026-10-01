@@ -31,8 +31,6 @@ pub fn args_for(cfg: &Config, p: &RunParams) -> Vec<String> {
     let b = |v: bool| if v { "true" } else { "false" }.to_string();
     let mut a = vec![
         p.video.clone(),
-        "--template".into(),
-        p.template.clone(),
         "--out".into(),
         p.out_dir.clone(),
         "--audio".into(),
@@ -58,6 +56,10 @@ pub fn args_for(cfg: &Config, p: &RunParams) -> Vec<String> {
         "--pose-roi".into(),
         b(p.show_pose_roi),
     ];
+    if !p.template.is_empty() {
+        a.push("--template".into());
+        a.push(p.template.clone());
+    }
     if let Some(ann) = &p.annotations {
         a.push("--annotations".into());
         a.push(ann.clone());
@@ -241,5 +243,25 @@ mod tests {
             show_pose_roi: true,
         };
         assert!(!args_for(&cfg(), &p).contains(&"--annotations".to_string()));
+    }
+
+    #[test]
+    fn template_omitted_when_empty() {
+        let p = RunParams {
+            video: "v.mp4".into(),
+            template: String::new(),
+            annotations: None,
+            out_dir: "o".into(),
+            audio: true,
+            language: "zh".into(),
+            show_skeletons: true,
+            show_player_trajectories: true,
+            show_court_trajectory: true,
+            show_shuttlecock_trajectory: true,
+            show_player_stats: true,
+            show_pose_roi: true,
+        };
+        // template kosong -> gb_cpp auto-pick frame dari video
+        assert!(!args_for(&cfg(), &p).contains(&"--template".to_string()));
     }
 }

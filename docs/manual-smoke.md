@@ -17,8 +17,10 @@ without a GUI. Run these steps after `bun run tauri build` succeeds.
 1. Run `bun run tauri dev` from the repo root → the app window opens and the
    Run tab shows the default paths (`gb_cpp` auto-detected) and the
    `ffmpeg_ok` flag matches whether ffmpeg is actually installed.
-2. Fill video = `Good-Badminton/videos/test4.mp4`, template =
-   `Good-Badminton/templates/test4.png`, out = an empty folder, then press
+2. Fill video = `Good-Badminton/videos/test4.mp4`, leave template **empty**
+   (auto-picks a frame from the video → `auto_template.png` in the output
+   folder; or browse `templates/test4.png` to test the explicit path), out =
+   an empty folder, then press
    Run → the progress bar moves, the ETA counts down, the log fills; when it
    finishes → a "Buka folder output" button appears (clicking it opens the
    folder in Explorer); `detections.jsonl` has ≥ 5871 lines; the History tab
