@@ -2082,21 +2082,21 @@ bun run build && git add -A && git commit -m "feat: history list with output pre
 - Consumes: semuanya.
 - Produces: bukti run end-to-end + `bun run tauri build` → installer NSIS.
 
-- [ ] **Step 1: Jalankan dev app**
+- [ ] **Step 1: Gates otomatis** (semua harus hijau — subagent tidak punya GUI, jadi smoke visual = checklist terpisah):
 
 ```bash
-cd C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Studio
-bun run tauri dev
+cd C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Studio/src-tauri && cargo test && cargo check
+cd .. && bun run build
 ```
-Expected: window terbuka, tab Run menampilkan path default (gb_cpp terdeteksi), ffmpeg_ok sesuai instalasi.
+Expected: semua exit 0.
 
-- [ ] **Step 2: E2E manual di window** — isi video = `Good-Badminton/videos/test4.mp4`, template = `Good-Badminton/templates/test4.png`, out = folder kosong, Run.
-Expected: progress bar bergerak, ETA turun, log terisi, setelah selesai tombol "Buka folder output" muncul; `detections.jsonl` ≥5871 baris; tab History menampilkan entri + preview playable.
+- [ ] **Step 2: Checklist manual GUI** — tulis checklist ini ke `docs/manual-smoke.md` (commit bersama Step 6; dieksekusi manusia di akhir, BUKAN gate subagent):
 
-- [ ] **Step 3: Batal** — Run lagi, tekan Cancel di tengah.
-Expected: `run-finished` status `cancelled`, proses `gb_cpp.exe` mati (Task Manager).
+1. `bun run tauri dev` → window terbuka, tab Run menampilkan path default (gb_cpp terdeteksi), ffmpeg_ok sesuai instalasi.
+2. Isi video = `Good-Badminton/videos/test4.mp4`, template = `Good-Badminton/templates/test4.png`, out = folder kosong, Run → progress bar bergerak, ETA turun, log terisi; selesai → tombol "Buka folder output" muncul (klik = terbuka di explorer); `detections.jsonl` ≥5871 baris; tab History menampilkan entri + preview playable.
+3. Run lagi, tekan Cancel di tengah → `run-finished` status `cancelled`, proses `gb_cpp.exe` mati (Task Manager).
 
-- [ ] **Step 4: Regression parity cepat** (fixture 5 detik, CLI polos tanpa flag — memastikan Task 1 tidak mengubah output):
+- [ ] **Step 4: Regression parity cepat** (fixture 5 detik, CLI polos tanpa flag — memastikan Task 1 tidak mengubah output; bila exit ≠ 0 karena court-detect gagal, pre-seed `outputs/t9reg/court_annotations.txt` dulu dari annotations test4):
 
 ```bash
 cd C:/Users/Ulin/Documents/kerjaan/riset/Good-Badminton-Cpp
