@@ -34,7 +34,8 @@ export async function renderHistory(root: HTMLElement) {
   root.querySelectorAll("#h-list li.hist-item").forEach((li) => {
     li.addEventListener("click", async () => {
       const out = (li as HTMLElement).dataset.out!;
-      const name = (li as HTMLElement).dataset.video!.split(/[\\/]/).pop()!.replace(/\.[^.]+$/, "");
+      // mirror C++: basename(path)[:-4] — strip 4 karakter terakhir, bukan ekstensi regex
+      const name = (li as HTMLElement).dataset.video!.split(/[\\/]/).pop()!.slice(0, -4);
       const detail = root.querySelector("#h-detail") as HTMLElement;
       if (!out) return;
       const src = convertFileSrc(`${out}/detect_${name}.mp4`);

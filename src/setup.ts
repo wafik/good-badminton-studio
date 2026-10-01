@@ -128,11 +128,13 @@ export function renderSetup(root: HTMLElement) {
     void listen<{ frame: number; total: number }>("progress", (e) => {
       if (!t0) t0 = Date.now();
       const { frame, total } = e.payload;
-      const bar = root.querySelector("#prog") as HTMLProgressElement;
-      bar.value = (frame / total) * 100;
-      const rate = frame / ((Date.now() - t0) / 1000);
-      const eta = rate > 0 ? Math.round((total - frame) / rate) : 0;
-      (root.querySelector("#eta") as HTMLElement).textContent = `${frame}/${total} · ETA ${eta}s`;
+      if (total > 0) {
+        const bar = root.querySelector("#prog") as HTMLProgressElement;
+        bar.value = (frame / total) * 100;
+        const rate = frame / ((Date.now() - t0) / 1000);
+        const eta = rate > 0 ? Math.round((total - frame) / rate) : 0;
+        (root.querySelector("#eta") as HTMLElement).textContent = `${frame}/${total} · ETA ${eta}s`;
+      }
     });
     void listen<{ line: string }>("log", (e) => {
       const log = root.querySelector("#log")!;
@@ -195,6 +197,7 @@ export function renderSetup(root: HTMLElement) {
     } catch (e) {
       alert(String(e));
       (root.querySelector("#b-run") as HTMLButtonElement).disabled = false;
+      (root.querySelector("#b-cancel") as HTMLButtonElement).disabled = true;
     }
   });
   root.querySelector("#b-cancel")!.addEventListener("click", () => {

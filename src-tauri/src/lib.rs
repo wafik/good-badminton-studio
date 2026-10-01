@@ -18,7 +18,7 @@ async fn start_run(
         .map_err(|e| e.to_string())?
         // first launch: config.json belum ada → fallback ke auto-detect sibling
         .or_else(|| config::detect(&std::env::current_dir().unwrap_or_default()))
-        .ok_or("config tidak ada dan sibling Good-Badminton-Cpp tidak terdeteksi")?;
+        .ok_or_else(|| format!("config tidak ada dan sibling tidak terdeteksi — buat config.json di {}", path.display()))?;
     pipeline::spawn_run(app, state, cfg, params).await
 }
 

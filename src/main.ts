@@ -18,7 +18,12 @@ function show(name: string) {
   document.querySelectorAll("nav button").forEach((b) =>
     (b as HTMLButtonElement).classList.toggle("active", (b as HTMLButtonElement).dataset.view === name));
   const el = document.getElementById(`view-${name}`);
-  if (el && views[name]) views[name](el);
+  if (el && views[name]) {
+    if (name === "history" || !el.dataset.rendered) {
+      el.dataset.rendered = "1";
+      views[name](el);
+    }
+  }
 }
 document.querySelectorAll("nav button").forEach((b) =>
   (b as HTMLButtonElement).addEventListener("click", () => show((b as HTMLButtonElement).dataset.view!)));

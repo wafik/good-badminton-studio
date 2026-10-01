@@ -16,6 +16,7 @@ export function renderCorners(root: HTMLElement) {
   const pts: [number, number][] = [];
   let img: HTMLImageElement | null = null;
 
+  // ponytail: canvas 2D butuh hex literal — duplikat token --accent/--accent-ink dari styles.css
   const redraw = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (img) ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
