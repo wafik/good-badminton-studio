@@ -1543,17 +1543,17 @@ git add -A && git commit -m "chore: e2e verified, nsis installer builds"
 
 ```cpp
         } else if (a == "--skeletons") {
-            if (parse_bool(need("--skeletons"), opts.show_skeletons)) bad_value = true;
+            if (!parse_bool(need("--skeletons"), opts.show_skeletons)) bad_value = true;
         } else if (a == "--player-trajectories") {
-            if (parse_bool(need("--player-trajectories"), opts.show_player_trajectories)) bad_value = true;
+            if (!parse_bool(need("--player-trajectories"), opts.show_player_trajectories)) bad_value = true;
         } else if (a == "--court-trajectory") {
-            if (parse_bool(need("--court-trajectory"), opts.show_court_trajectory)) bad_value = true;
+            if (!parse_bool(need("--court-trajectory"), opts.show_court_trajectory)) bad_value = true;
         } else if (a == "--shuttlecock-trajectory") {
-            if (parse_bool(need("--shuttlecock-trajectory"), opts.show_shuttlecock_trajectory)) bad_value = true;
+            if (!parse_bool(need("--shuttlecock-trajectory"), opts.show_shuttlecock_trajectory)) bad_value = true;
         } else if (a == "--player-stats") {
-            if (parse_bool(need("--player-stats"), opts.show_player_stats)) bad_value = true;
+            if (!parse_bool(need("--player-stats"), opts.show_player_stats)) bad_value = true;
         } else if (a == "--pose-roi") {
-            if (parse_bool(need("--pose-roi"), opts.show_pose_roi)) bad_value = true;
+            if (!parse_bool(need("--pose-roi"), opts.show_pose_roi)) bad_value = true;
         }
 ```
 ```
