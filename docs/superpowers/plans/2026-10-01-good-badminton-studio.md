@@ -2048,7 +2048,7 @@ export async function renderHistory(root: HTMLElement) {
       }</ul>
       <div id="h-detail" class="hist-detail card"></div>
     </div>`;
-  root.querySelectorAll("#h-list li").forEach((li) => {
+  root.querySelectorAll("#h-list li.hist-item").forEach((li) => {
     li.addEventListener("click", async () => {
       const out = (li as HTMLElement).dataset.out!;
       const name = (li as HTMLElement).dataset.video!.split(/[\\/]/).pop()!.replace(/\.[^.]+$/, "");
