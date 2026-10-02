@@ -55,3 +55,23 @@ jobs:
 
       - name: Smoke — bundled engine loads models
         run: bash scripts/engine-smoke.sh
+
+      # Gagal di smoke = segfault/abort pas load model. Ambil backtrace + crash
+      # report supaya root-cause ketahuan tanpa nebak-nebak staging/codesign.
+      - name: Crash diagnostics (backtrace + report)
+        if: failure()
+        run: |
+          set +e
+          M=src-tauri/bundle/models; E=src-tauri/bundle/engine
+          T=$(mktemp -d); : > "$T/dummy.mp4"
+          echo "== otool -L gb_cpp =="; otool -L "$E/gb_cpp"
+          echo "== otool -l LC_RPATH gb_cpp =="; otool -l "$E/gb_cpp" | grep -A2 LC_RPATH
+          echo "== codesign -dvvv =="; codesign -dvvv "$E/gb_cpp" 2>&1 | head -25
+          echo "== lldb backtrace =="
+          GB_FORCE_CPU=1 lldb --batch \
+            -o "run $T/dummy.mp4 --ball-model $M/yolo11s-ball.onnx --yolo-pose-model $M/yolo11n-pose-dyn.onnx --out $T/out" \
+            -o "bt all" -o "quit" "$E/gb_cpp" 2>&1 | tail -120
+          echo "== crash report =="
+          sleep 5
+          f=$(find "$HOME/Library/Logs/DiagnosticReports" -name 'gb_cpp*.ips' -mmin -10 2>/dev/null | head -1)
+          if [ -n "$f" ]; then echo "report: $f"; head -c 6000 "$f"; else echo "no .ips yet"; fi
