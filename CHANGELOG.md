@@ -2,7 +2,7 @@
 
 All notable changes to Good-Badminton Studio are documented here.
 
-## Unreleased
+## v1.5 (2026-10-02)
 
 - **Output codec choice (Run tab)** — pick the final export codec:
   **H.264** (default, fast and compatible with every player) or **H.265**
