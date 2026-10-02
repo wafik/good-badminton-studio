@@ -23,3 +23,35 @@ jobs:
       - name: Rust test + check
         working-directory: src-tauri
         run: cargo test && cargo check
+
+  # Reproduksi engine macOS di setiap push: build gb_cpp + stage-bundle +
+  # engine-smoke (termasuk model-load smoke). v1.4 segfault di macOS
+  # (session creation) lolos karena smoke lama hanya `--help` dan CI tidak
+  # pernah jalan di macOS. Job ini menutup celah itu.
+  engine-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout engine source (Good-Badminton-Cpp)
+        run: git clone --depth 1 https://github.com/wafik/good-badminton-cpp.git cpp-engine-src
+
+      - name: Engine deps (brew OpenCV 4 + dylibbundler + ONNX Runtime)
+        run: |
+          brew uninstall --force opencv 2>/dev/null || true
+          brew install opencv@4 dylibbundler
+          curl -fsSL -o /tmp/ort.tgz https://github.com/microsoft/onnxruntime/releases/download/v1.19.2/onnxruntime-osx-arm64-1.19.2.tgz
+          mkdir -p cpp-engine-src/third_party
+          tar -xzf /tmp/ort.tgz -C cpp-engine-src/third_party
+
+      - name: Build engine
+        run: |
+          cmake -S cpp-engine-src -B cpp-engine-src/build -DCMAKE_BUILD_TYPE=Release \
+            -DOpenCV_DIR="$(brew --prefix opencv@4)/lib/cmake/opencv4"
+          cmake --build cpp-engine-src/build -j
+
+      - name: Stage engine + models into bundle
+        run: bash scripts/stage-bundle.sh cpp-engine-src
+
+      - name: Smoke — bundled engine loads models
+        run: bash scripts/engine-smoke.sh
