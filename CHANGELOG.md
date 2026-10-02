@@ -2,6 +2,16 @@
 
 All notable changes to Good-Badminton Studio are documented here.
 
+## v1.4 (2026-10-02)
+
+- **Far-side players now detected** — the bundled engine raises the pose
+  input size (960 → 1600) and lowers the confidence threshold (0.15 →
+  0.10), so players on the far side of the court are tracked instead of
+  being dropped (verified: far-side occupancy 0% → 89% on a portrait
+  video). Slightly slower on CPU (~1.4× pose time); extra detections are
+  filtered by the on-court check. Override with `--pose-conf` /
+  `--pose-imgsz`.
+
 ## v1.2 (2026-10-01)
 
 - **Self-contained installers** — the C++ engine (`gb_cpp` + runtime
