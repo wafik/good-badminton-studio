@@ -2,6 +2,14 @@
 
 All notable changes to Good-Badminton Studio are documented here.
 
+## Unreleased
+
+- **In-app update check** — on startup the app checks the latest GitHub
+  release and shows a dismissible banner when a newer version exists, with
+  an **Unduh** button that opens the release page in the default browser.
+  Offline or on any failure it stays silent (offline-first); a dismissed
+  version never re-appears, but a newer one does.
+
 ## v1.4 (2026-10-02)
 
 - **Far-side players now detected** — the bundled engine raises the pose

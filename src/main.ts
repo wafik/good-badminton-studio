@@ -7,6 +7,7 @@ import "@fontsource/ibm-plex-mono/500.css";
 import { renderSetup } from "./setup";
 import { renderCorners } from "./corners";
 import { renderHistory } from "./history";
+import { checkForUpdate } from "./update";
 
 const views: Record<string, (el: HTMLElement) => void> = {
   setup: renderSetup,
@@ -28,3 +29,4 @@ function show(name: string) {
 document.querySelectorAll("nav button").forEach((b) =>
   (b as HTMLButtonElement).addEventListener("click", () => show((b as HTMLButtonElement).dataset.view!)));
 show("setup");
+void checkForUpdate();

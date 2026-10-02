@@ -106,6 +106,28 @@ body {
   box-shadow: 0 0 8px var(--gold-line);
 }
 
+/* --- update banner --- */
+.update-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 20px 9px 15px;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px; color: var(--muted);
+  animation: rise 0.38s ease both;
+}
+.update-ver { font: 500 12.5px/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; }
+.update-dl {
+  margin-left: auto; padding: 5px 12px; cursor: pointer;
+  border: 1px solid var(--accent-line); border-radius: var(--radius-sm);
+  background: var(--accent-soft); color: var(--accent);
+  font: 600 12px/1.2 var(--font-sans); letter-spacing: 0.04em;
+  transition: filter 0.15s ease, border-color 0.15s ease;
+}
+.update-dl:hover { filter: brightness(1.12); border-color: var(--accent); }
+.update-close { border: 0; background: none; padding: 2px 4px; cursor: pointer; color: var(--faint); font-size: 17px; line-height: 1; transition: color 0.15s ease; }
+.update-close:hover { color: var(--ink); }
+
 /* --- layout --- */
 main { padding: 20px 22px 36px; max-width: 1280px; margin: 0 auto; }
 
