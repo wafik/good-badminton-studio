@@ -2,8 +2,14 @@
 
 All notable changes to Good-Badminton Studio are documented here.
 
-## Unreleased
+## v1.4.1 (2026-10-02)
 
+- **Fixed macOS crash at analysis start** — the engine freed the ONNX
+  `TypeInfo` object before reading the model input shape (use-after-free),
+  which segfaulted (exit 139) right after "Initializing YOLO pose model" on
+  Apple Silicon; Windows only survived by luck. Fixed in the engine
+  (`onnx_util.h`), and CI now loads both ONNX models on every push on
+  Windows + macOS so this class of bug can no longer ship.
 - **In-app update check** — on startup the app checks the latest GitHub
   release and shows a dismissible banner when a newer version exists, with
   an **Unduh** button that opens the release page in the default browser.
