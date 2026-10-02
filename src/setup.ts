@@ -60,6 +60,14 @@ export function renderSetup(root: HTMLElement) {
               </select>
               <span class="hint">Teks panel statistik pada video output</span>
             </div>
+            <div class="field field-half">
+              <span class="field-label">Codec output</span>
+              <select id="v-codec">
+                <option value="h264" selected>H.264 — cepat, kompatibel</option>
+                <option value="h265">H.265 — file lebih kecil, encode lebih lama</option>
+              </select>
+              <span class="hint">Format video pada hasil export</span>
+            </div>
           </div>
           <fieldset class="params">
             <legend>Display overlay</legend>
@@ -116,6 +124,7 @@ export function renderSetup(root: HTMLElement) {
     if (!d) return;
     (root.querySelector("#v-audio") as HTMLInputElement).checked = d.audio;
     (root.querySelector("#v-lang") as HTMLSelectElement).value = d.language;
+    (root.querySelector("#v-codec") as HTMLSelectElement).value = d.output_codec;
     const pairs: [string, boolean][] = [
       ["#p-skel", d.show_skeletons],
       ["#p-trail", d.show_player_trajectories],
@@ -170,6 +179,7 @@ export function renderSetup(root: HTMLElement) {
       out_dir: (root.querySelector("#v-out") as HTMLInputElement).value,
       audio: (root.querySelector("#v-audio") as HTMLInputElement).checked,
       language: (root.querySelector("#v-lang") as HTMLSelectElement).value as "en" | "zh" | "id",
+      output_codec: (root.querySelector("#v-codec") as HTMLSelectElement).value as "h264" | "h265",
       show_skeletons: chk("#p-skel"),
       show_player_trajectories: chk("#p-trail"),
       show_court_trajectory: chk("#p-court"),
@@ -189,6 +199,7 @@ export function renderSetup(root: HTMLElement) {
         cfg.defaults = {
           audio: params.audio,
           language: params.language,
+          output_codec: params.output_codec,
           show_skeletons: params.show_skeletons,
           show_player_trajectories: params.show_player_trajectories,
           show_court_trajectory: params.show_court_trajectory,

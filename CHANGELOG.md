@@ -2,6 +2,13 @@
 
 All notable changes to Good-Badminton Studio are documented here.
 
+## Unreleased
+
+- **Output codec choice (Run tab)** — pick the final export codec:
+  **H.264** (default, fast and compatible with every player) or **H.265**
+  (smaller files, slower to encode). The choice is sent to the engine as
+  `--output-codec h264|h265` and remembered in `config.json`.
+
 ## v1.4.1 (2026-10-02)
 
 - **Fixed macOS crash at analysis start** — the engine freed the ONNX

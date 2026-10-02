@@ -13,11 +13,21 @@ pub struct Config {
     pub defaults: RunDefaults,
 }
 
+/// Codec video default: `h264` (= perilaku lama, kompatibel di semua pemutar).
+/// Dipakai bersama oleh `RunDefaults` dan `RunParams` (payload lama).
+pub(crate) fn default_output_codec() -> String {
+    "h264".into()
+}
+
 /// Default identik main.py: audio on, enam toggle display true, language zh.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RunDefaults {
     pub audio: bool,
     pub language: String,
+    /// Codec output: `h264` / `h265`. Field-level default agar config.json
+    /// lama (yang sudah punya `defaults` tapi belum field ini) tetap load.
+    #[serde(default = "default_output_codec")]
+    pub output_codec: String,
     pub show_skeletons: bool,
     pub show_player_trajectories: bool,
     pub show_court_trajectory: bool,
@@ -31,6 +41,7 @@ impl Default for RunDefaults {
         RunDefaults {
             audio: true,
             language: "zh".into(),
+            output_codec: default_output_codec(),
             show_skeletons: true,
             show_player_trajectories: true,
             show_court_trajectory: true,
@@ -178,6 +189,7 @@ mod tests {
         let back = load(&p).unwrap().unwrap();
         assert!(back.defaults.show_skeletons && back.defaults.audio);
         assert_eq!(back.defaults.language, "zh");
+        assert_eq!(back.defaults.output_codec, "h264");
         std::fs::remove_file(&p).ok();
     }
 
@@ -191,6 +203,24 @@ mod tests {
         .unwrap();
         let back = load(&p).unwrap().unwrap();
         assert!(back.defaults.show_player_stats);
+        std::fs::remove_file(&p).ok();
+    }
+
+    #[test]
+    fn config_with_defaults_but_no_output_codec_loads() {
+        // config.json dari v1.4.x: ada `defaults` tapi belum ada output_codec.
+        let p = std::env::temp_dir().join(format!("gb_cfg_codec_{}.json", std::process::id()));
+        std::fs::write(
+            &p,
+            r#"{"gb_cpp_path":"e","data_dir":"d","ball_model":"b","pose_model":"p",
+                "defaults":{"audio":true,"language":"zh","show_skeletons":true,
+                "show_player_trajectories":true,"show_court_trajectory":true,
+                "show_shuttlecock_trajectory":true,"show_player_stats":true,
+                "show_pose_roi":true}}"#,
+        )
+        .unwrap();
+        let back = load(&p).unwrap().unwrap();
+        assert_eq!(back.defaults.output_codec, "h264");
         std::fs::remove_file(&p).ok();
     }
 }

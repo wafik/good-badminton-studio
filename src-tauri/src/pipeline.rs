@@ -19,6 +19,10 @@ pub struct RunParams {
     pub out_dir: String,
     pub audio: bool,
     pub language: String,
+    /// Codec video hasil export: `h264` (default, kompatibel) / `h265`.
+    /// Payload lama tanpa field ini tetap jalan (default h264 = perilaku lama).
+    #[serde(default = "crate::config::default_output_codec")]
+    pub output_codec: String,
     pub show_skeletons: bool,
     pub show_player_trajectories: bool,
     pub show_court_trajectory: bool,
@@ -37,6 +41,8 @@ pub fn args_for(cfg: &Config, p: &RunParams) -> Vec<String> {
         b(p.audio),
         "--language".into(),
         p.language.clone(),
+        "--output-codec".into(),
+        p.output_codec.clone(),
         "--ball-model".into(),
         cfg.ball_model.clone(),
         "--yolo-pose-model".into(),
@@ -209,6 +215,7 @@ mod tests {
             out_dir: "o".into(),
             audio: false,
             language: "en".into(),
+            output_codec: "h264".into(),
             show_skeletons: false,
             show_player_trajectories: true,
             show_court_trajectory: true,
@@ -223,7 +230,44 @@ mod tests {
         assert!(a.windows(2).any(|w| w[0] == "--skeletons" && w[1] == "false"));
         assert!(a.windows(2).any(|w| w[0] == "--pose-roi" && w[1] == "false"));
         assert!(a.windows(2).any(|w| w[0] == "--court-trajectory" && w[1] == "true"));
+        assert!(a.windows(2).any(|w| w[0] == "--output-codec" && w[1] == "h264"));
         assert!(a.contains(&"p.onnx".to_string()));
+    }
+
+    #[test]
+    fn output_codec_defaults_to_h264_when_field_absent() {
+        // payload lama (klien versi sebelumnya) tanpa output_codec → h264
+        let p: RunParams = serde_json::from_str(
+            r#"{"video":"v.mp4","template":"t.png","annotations":null,"out_dir":"o",
+                "audio":true,"language":"zh","show_skeletons":true,
+                "show_player_trajectories":true,"show_court_trajectory":true,
+                "show_shuttlecock_trajectory":true,"show_player_stats":true,
+                "show_pose_roi":true}"#,
+        )
+        .unwrap();
+        let a = args_for(&cfg(), &p);
+        assert!(a.windows(2).any(|w| w[0] == "--output-codec" && w[1] == "h264"));
+    }
+
+    #[test]
+    fn args_carry_h265_when_selected() {
+        let p = RunParams {
+            video: "v.mp4".into(),
+            template: String::new(),
+            annotations: None,
+            out_dir: "o".into(),
+            audio: true,
+            language: "zh".into(),
+            output_codec: "h265".into(),
+            show_skeletons: true,
+            show_player_trajectories: true,
+            show_court_trajectory: true,
+            show_shuttlecock_trajectory: true,
+            show_player_stats: true,
+            show_pose_roi: true,
+        };
+        let a = args_for(&cfg(), &p);
+        assert!(a.windows(2).any(|w| w[0] == "--output-codec" && w[1] == "h265"));
     }
 
     #[test]
@@ -235,6 +279,7 @@ mod tests {
             out_dir: "o".into(),
             audio: true,
             language: "zh".into(),
+            output_codec: "h265".into(),
             show_skeletons: true,
             show_player_trajectories: true,
             show_court_trajectory: true,
@@ -254,6 +299,7 @@ mod tests {
             out_dir: "o".into(),
             audio: true,
             language: "zh".into(),
+            output_codec: "h265".into(),
             show_skeletons: true,
             show_player_trajectories: true,
             show_court_trajectory: true,

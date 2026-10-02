@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface RunDefaults {
   audio: boolean;
   language: string;
+  output_codec: "h264" | "h265";
   show_skeletons: boolean;
   show_player_trajectories: boolean;
   show_court_trajectory: boolean;
@@ -24,6 +25,7 @@ export interface RunParams {
   out_dir: string;
   audio: boolean;
   language: "en" | "zh" | "id";
+  output_codec: "h264" | "h265";
   show_skeletons: boolean;
   show_player_trajectories: boolean;
   show_court_trajectory: boolean;
