@@ -31,6 +31,12 @@ Desktop GUI for the **Good-Badminton** badminton video analysis pipeline — the
 ## Requirements
 
 - Download the installer for your OS from the GitHub Releases page — Windows (NSIS `.exe`), macOS (`.dmg`, Apple Silicon), or Linux (`.deb`/AppImage). The installer is self-contained: it already bundles the C++ engine (`gb_cpp` + runtime libraries) and both ONNX models, so no separate setup is needed. Install and run.
+- **macOS only:** the app is ad-hoc signed (no paid Apple Developer ID), so Gatekeeper may block the first open ("app has been modified"). Clear the quarantine once after copying to `/Applications`:
+  ```bash
+  xattr -cr "/Applications/Good-Badminton Studio.app"
+  open "/Applications/Good-Badminton Studio.app"
+  ```
+  Or: double-click → cancel → System Settings → Privacy & Security → **Open Anyway**.
 - [ffmpeg](https://ffmpeg.org/) on `PATH` (optional, for saving audio).
 - [Bun](https://bun.sh) 1.4+ (development/build only).
 
