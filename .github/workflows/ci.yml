@@ -68,10 +68,20 @@ jobs:
           echo "== otool -l LC_RPATH gb_cpp =="; otool -l "$E/gb_cpp" | grep -A2 LC_RPATH
           echo "== codesign -dvvv =="; codesign -dvvv "$E/gb_cpp" 2>&1 | head -25
           echo "== lldb backtrace =="
+          # stop-command-source-on-error: kalau tidak, run yg crash bikin batch
+          # berhenti → bt all tak pernah dieksekusi.
           GB_FORCE_CPU=1 lldb --batch \
+            -o "settings set interpreter.stop-command-source-on-error false" \
             -o "run $T/dummy.mp4 --ball-model $M/yolo11s-ball.onnx --yolo-pose-model $M/yolo11n-pose-dyn.onnx --out $T/out" \
-            -o "bt all" -o "quit" "$E/gb_cpp" 2>&1 | tail -120
-          echo "== crash report =="
+            -o "thread backtrace" -o "bt all" -o "quit" "$E/gb_cpp" 2>&1 | tail -n 250
+          echo "== crash report frames =="
           sleep 5
           f=$(find "$HOME/Library/Logs/DiagnosticReports" -name 'gb_cpp*.ips' -mmin -10 2>/dev/null | head -1)
-          if [ -n "$f" ]; then echo "report: $f"; head -c 6000 "$f"; else echo "no .ips yet"; fi
+          if [ -n "$f" ]; then
+            echo "report: $f"
+            tail -n +2 "$f" | jq -r '. as $j | (($j.usedImages // $j.images)) as $imgs
+              | $j.threads[$j.faultingThread].frames[0:30][]
+              | "\($imgs[.imageIndex].name)  +\(.imageOffset)  \(.symbol // "")"'
+          else
+            echo "no .ips yet"
+          fi
